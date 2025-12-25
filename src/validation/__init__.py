@@ -1,0 +1,1 @@
+"""Validation layer - syntax, type hints, complexity, testability."""
