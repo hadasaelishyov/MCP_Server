@@ -123,22 +123,22 @@ Your task:
 1. Analyze the source code to understand the logic
 2. Replace weak assertions (like "assert result is not None") with real expected values
 3. Fix exception test trigger conditions
-4. Suggest additional edge cases
+4. ADD 2-3 additional test functions for important edge cases not covered
 
 Rules:
-- Keep the test structure and names
-- Only improve assertions and input values
+- Keep existing test names and structure
+- Improve assertions and input values
+- ADD new test functions for missing edge cases (name them test_<function>_edge_<description>)
 - Be precise - don't guess if you're not sure
 - Return valid Python code
 
 Output format:
 ```python
-# Enhanced tests here
+# Enhanced tests here (including NEW tests)
 ```
 
 SUGGESTIONS:
-- Additional test idea 1
-- Additional test idea 2
+- Any additional ideas not implemented above
 """
     
     def _build_enhancement_prompt(
@@ -238,42 +238,47 @@ Please enhance these tests:
         import ast
         
         enhanced_tests = []
+        original_names = {t.name for t in original_tests}
         
         try:
             tree = ast.parse(code)
         except SyntaxError:
-            # AI generated invalid code - try to fix common issues
-            # or fall back to original
             return original_tests
         
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
-                # Find matching original test
+                # Find matching original test (if exists)
                 original = None
                 for t in original_tests:
                     if t.name == node.name:
                         original = t
                         break
                 
-                # Extract body lines from source directly
+                # Extract body lines
                 body_lines = []
                 for stmt in node.body:
                     # Skip docstring
                     if isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant):
                         continue
-                    # Use ast.unparse to get proper formatting
                     try:
                         line = ast.unparse(stmt)
                         body_lines.append(line)
                     except Exception:
                         continue
                 
-                # Create enhanced test case
+                # Determine if this is a new test or enhanced existing
+                if node.name in original_names:
+                    evidence_source = "ai_enhanced"
+                    description = original.description if original else f"Test {node.name}"
+                else:
+                    evidence_source = "ai_generated" 
+                    description = f"AI-generated edge case test."
+                
                 enhanced_tests.append(GeneratedTestCase(
                     name=node.name,
-                    description=original.description if original else f"Test {node.name}",
+                    description=description,
                     body=body_lines,
-                    evidence_source="ai_enhanced"
+                    evidence_source=evidence_source
                 ))
         
         return enhanced_tests if enhanced_tests else original_tests

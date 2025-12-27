@@ -28,24 +28,40 @@ class GeneratedTest:
     warnings: list[str] = field(default_factory=list)
     
     def to_code(self) -> str:
-        """Convert to Python test code."""
+        """Convert to executable Python test code."""
         lines = []
         
-        # Header
+        # Module docstring
         lines.append(f'"""Tests for {self.module_name}."""')
         lines.append("")
+        
+        # Imports
         lines.append("import pytest")
         if self.imports:
-            lines.append(f"from {self.module_name} import {', '.join(self.imports)}")
+            imports_str = ", ".join(self.imports)
+            lines.append(f"from {self.module_name} import {imports_str}")
         lines.append("")
         lines.append("")
         
-        # Test cases
+        # Test functions
         for test in self.test_cases:
             lines.append(f"def {test.name}():")
             lines.append(f'    """{test.description}"""')
+            
             for body_line in test.body:
-                lines.append(f"    {body_line}")
+                # Handle multi-line statements (like 'with' blocks)
+                if '\n' in body_line:
+                    sub_lines = body_line.split('\n')
+                    for i, sub_line in enumerate(sub_lines):
+                        if i == 0:
+                            # First line gets normal indent
+                            lines.append(f"    {sub_line}")
+                        else:
+                            # Subsequent lines get extra indent (inside with block)
+                            lines.append(f"        {sub_line}")
+                else:
+                    lines.append(f"    {body_line}")
+            
             lines.append("")
             lines.append("")
         
