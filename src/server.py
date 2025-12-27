@@ -53,7 +53,8 @@ async def list_tools() -> list[Tool]:
             description="Generate pytest test cases for Python code. "
                         "Uses template-based generation with evidence-based enrichment: "
                         "doctest extraction, type assertions, exception detection, "
-                        "boundary values, and naming heuristics.",
+                        "boundary values, and naming heuristics. "
+                        "Optionally uses AI to enhance assertions with real expected values.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -72,6 +73,14 @@ async def list_tools() -> list[Tool]:
                     "include_edge_cases": {
                         "type": "boolean",
                         "description": "Whether to generate edge case tests (default: true)"
+                    },
+                    "use_ai": {
+                        "type": "boolean",
+                        "description": "Whether to use AI to enhance tests with real expected values (default: false)"
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "description": "OpenAI API key (optional, uses OPENAI_API_KEY env var if not provided)"
                     }
                 }
             }
@@ -225,6 +234,7 @@ async def handle_analyze_code(arguments: dict) -> list[TextContent]:
 
 async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     """Handle the generate_tests tool."""
+    from .generators import generate_tests, generate_tests_with_ai
     
     # Get code from file_path or code argument
     code, error = _get_code(arguments)
@@ -239,6 +249,8 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     file_path = arguments.get("file_path")
     output_path = arguments.get("output_path")
     include_edge_cases = arguments.get("include_edge_cases", True)
+    use_ai = arguments.get("use_ai", False)
+    api_key = arguments.get("api_key")
     
     # Get module name
     module_name = _get_module_name(file_path)
@@ -252,13 +264,24 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
             text=f"Cannot generate tests: {analysis.error}"
         )]
     
-    # Generate tests
-    result = generate_tests(
-        analysis=analysis,
-        source_code=code,
-        module_name=module_name,
-        include_edge_cases=include_edge_cases
-    )
+    # Generate tests (with or without AI)
+    if use_ai:
+        result = generate_tests_with_ai(
+            analysis=analysis,
+            source_code=code,
+            module_name=module_name,
+            include_edge_cases=include_edge_cases,
+            api_key=api_key
+        )
+        mode = "AI-enhanced"
+    else:
+        result = generate_tests(
+            analysis=analysis,
+            source_code=code,
+            module_name=module_name,
+            include_edge_cases=include_edge_cases
+        )
+        mode = "Template"
     
     # Get the generated code
     test_code = result.to_code()
@@ -277,6 +300,7 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     # Build response
     response_parts = [
         f"Generated {len(result.test_cases)} test(s) for {len(analysis.functions)} function(s) and {len(analysis.classes)} class(es)",
+        f"Mode: {mode}",
         "",
         "Test breakdown by evidence source:",
     ]
@@ -292,7 +316,7 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     
     if result.warnings:
         response_parts.append("")
-        response_parts.append("⚠️ Warnings:")
+        response_parts.append("Warnings/Notes:")
         for warning in result.warnings:
             response_parts.append(f"  • {warning}")
     

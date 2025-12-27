@@ -454,3 +454,62 @@ def generate_tests(
         test_cases=test_cases,
         warnings=warnings
     )
+    
+def generate_tests_with_ai(
+    analysis: AnalysisResult,
+    source_code: str,
+    module_name: str = "module",
+    include_edge_cases: bool = True,
+    api_key: str | None = None
+) -> GeneratedTest:
+    """
+    Generate tests with optional AI enhancement.
+    
+    Pipeline:
+    1. Template generator creates basic tests (Layer 1+2)
+    2. AI enhancer improves assertions (Layer 3)
+    3. Fallback to template if AI fails
+    
+    Args:
+        analysis: Result from analyze_code()
+        source_code: Original source code
+        module_name: Name for imports
+        include_edge_cases: Whether to generate boundary tests
+        api_key: OpenAI API key (optional, uses env var if not provided)
+        
+    Returns:
+        GeneratedTest with complete test code
+    """
+    from .ai_enhancer import create_enhancer
+    
+    # Step 1: Generate template tests (always runs)
+    result = generate_tests(
+        analysis=analysis,
+        source_code=source_code,
+        module_name=module_name,
+        include_edge_cases=include_edge_cases
+    )
+    
+    # Step 2: Try AI enhancement
+    enhancer = create_enhancer(api_key=api_key)
+    
+    if not enhancer.is_available():
+        result.warnings.append("AI enhancement skipped: No API key configured")
+        return result
+    
+    enhancement = enhancer.enhance_tests(
+        source_code=source_code,
+        test_cases=result.test_cases
+    )
+    
+    if enhancement.success:
+        # Replace with enhanced tests
+        result.test_cases = enhancement.enhanced_tests
+        
+        # Add AI suggestions as comments
+        if enhancement.ai_suggestions:
+            result.warnings.append(f"AI suggestions: {', '.join(enhancement.ai_suggestions)}")
+    else:
+        result.warnings.append(f"AI enhancement failed: {enhancement.error}. Using template tests.")
+    
+    return result
