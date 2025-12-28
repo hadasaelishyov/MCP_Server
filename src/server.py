@@ -104,6 +104,39 @@ async def list_tools() -> list[Tool]:
                 "required": ["source_code", "test_code"]
             }
         ),
+        Tool(
+            name="fix_code",
+            description="Automatically fix bugs in Python code based on failing tests. "
+                        "Analyzes test failures, identifies bugs in the source code, "
+                        "generates minimal fixes using AI, and verifies the fix by re-running tests. "
+                        "Completes the test-driven development loop: generate tests → run tests → fix failures.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "source_code": {
+                        "type": "string",
+                        "description": "The Python source code to fix (contains bugs)"
+                    },
+                    "test_code": {
+                        "type": "string",
+                        "description": "The pytest test code that tests the source"
+                    },
+                    "test_output": {
+                        "type": "string",
+                        "description": "Raw pytest output (optional - will run tests if not provided)"
+                    },
+                    "verify": {
+                        "type": "boolean",
+                        "description": "Whether to verify the fix by re-running tests (default: true)"
+                    },
+                    "api_key": {
+                        "type": "string",
+                        "description": "OpenAI API key (optional, uses OPENAI_API_KEY env var if not provided)"
+                    }
+                },
+                "required": ["source_code", "test_code"]
+            }
+        ),
     ]
 
 
@@ -162,6 +195,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     
     elif name == "run_tests":
         return await handle_run_tests(arguments)
+    
+    elif name == "fix_code":
+        return await handle_fix_code(arguments)
     
     else:
         return [TextContent(
@@ -395,6 +431,98 @@ async def handle_run_tests(arguments: dict) -> list[TextContent]:
         response_parts.append("")
         response_parts.append("Error:")
         response_parts.append(f"  {result.error_message}")
+    
+    return [TextContent(
+        type="text",
+        text="\n".join(response_parts)
+    )]
+
+
+async def handle_fix_code(arguments: dict) -> list[TextContent]:
+    """Handle the fix_code tool."""
+    from .fixer import fix_code
+    
+    source_code = arguments.get("source_code")
+    test_code = arguments.get("test_code")
+    test_output = arguments.get("test_output")
+    verify = arguments.get("verify", True)
+    api_key = arguments.get("api_key")
+    
+    # Validate inputs
+    if not source_code:
+        return [TextContent(
+            type="text",
+            text="Error: 'source_code' is required"
+        )]
+    
+    if not test_code:
+        return [TextContent(
+            type="text",
+            text="Error: 'test_code' is required"
+        )]
+    
+    # Run the fixer
+    result = fix_code(
+        source_code=source_code,
+        test_code=test_code,
+        test_output=test_output,
+        verify=verify,
+        api_key=api_key
+    )
+    
+    # Build response
+    response_parts = [
+        "🔧 CODE FIX RESULTS",
+        "=" * 50,
+        "",
+    ]
+    
+    if not result.success:
+        response_parts.append(f"❌ Fix failed: {result.error}")
+        return [TextContent(
+            type="text",
+            text="\n".join(response_parts)
+        )]
+    
+    # Success case
+    response_parts.append(f"✅ Fix generated successfully!")
+    response_parts.append(f"Confidence: {result.confidence}")
+    response_parts.append("")
+    
+    # Bugs found
+    if result.bugs_found:
+        response_parts.append(f"🐛 Bugs Found ({len(result.bugs_found)}):")
+        for i, bug in enumerate(result.bugs_found, 1):
+            line_info = f"[Line {bug.line_number}] " if bug.line_number else ""
+            response_parts.append(f"  {i}. {line_info}{bug.description}")
+        response_parts.append("")
+    
+    # Fixes applied
+    if result.fixes_applied:
+        response_parts.append(f"🔨 Fixes Applied ({len(result.fixes_applied)}):")
+        for i, fix in enumerate(result.fixes_applied, 1):
+            line_info = f"[Line {fix.line_number}] " if fix.line_number else ""
+            response_parts.append(f"  {i}. {line_info}{fix.description}")
+            response_parts.append(f"     Reason: {fix.reason}")
+        response_parts.append("")
+    
+    # Verification results
+    if result.verification:
+        response_parts.append("🧪 Verification:")
+        if result.verification.passed:
+            response_parts.append(f"  ✅ All tests pass! ({result.verification.tests_passed}/{result.verification.tests_total})")
+        else:
+            response_parts.append(f"  ⚠️ Some tests still failing: {result.verification.tests_passed}/{result.verification.tests_total} passed")
+            if result.verification.error_message:
+                response_parts.append(f"  Error: {result.verification.error_message}")
+        response_parts.append("")
+    
+    # Fixed code
+    response_parts.append("=" * 50)
+    response_parts.append("FIXED CODE:")
+    response_parts.append("=" * 50)
+    response_parts.append("")
+    response_parts.append(result.fixed_code)
     
     return [TextContent(
         type="text",
