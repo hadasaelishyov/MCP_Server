@@ -3,7 +3,17 @@ Data models for code analysis.
 """
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Literal
+
+
+# Parameter kinds matching Python's inspect module
+ParameterKind = Literal[
+    "positional_only",      # Before /
+    "positional_or_keyword", # Normal parameters
+    "var_positional",       # *args
+    "keyword_only",         # After * or *args
+    "var_keyword"           # **kwargs
+]
 
 
 @dataclass
@@ -13,6 +23,7 @@ class ParameterInfo:
     type_hint: str | None = None
     default_value: str | None = None
     has_default: bool = False
+    kind: ParameterKind = "positional_or_keyword"
 
 
 @dataclass
@@ -84,7 +95,8 @@ class AnalysisResult:
                         {
                             "name": p.name,
                             "type_hint": p.type_hint,
-                            "has_default": p.has_default
+                            "has_default": p.has_default,
+                            "kind": p.kind
                         }
                         for p in f.parameters
                     ],

@@ -137,54 +137,109 @@ def _parse_class(node: ast.ClassDef) -> ClassInfo:
 
 
 def _parse_parameters(args: ast.arguments) -> list[ParameterInfo]:
-    """Parse function arguments into ParameterInfo list."""
+    """
+    Parse function arguments into ParameterInfo list.
+    
+    Handles all Python parameter kinds:
+    - Positional-only (before /)
+    - Positional-or-keyword (normal)
+    - *args (var_positional)
+    - Keyword-only (after * or *args)
+    - **kwargs (var_keyword)
+    
+    Args:
+        args: AST arguments node
+        
+    Returns:
+        List of ParameterInfo with correct kind for each parameter
+    """
     parameters = []
     
-    # Calculate defaults offset
-    # defaults are aligned to the END of args
+    # 1. Positional-only parameters (before /)
+    # posonlyargs has its own defaults: they're at the END of args.defaults
+    # but we need to calculate which defaults belong to posonlyargs vs args
+    num_posonlyargs = len(args.posonlyargs)
     num_args = len(args.args)
     num_defaults = len(args.defaults)
-    defaults_offset = num_args - num_defaults
     
-    for i, arg in enumerate(args.args):
-        # Get type hint
-        type_hint = None
-        if arg.annotation:
-            type_hint = _get_annotation_string(arg.annotation)
+    # defaults are right-aligned across posonlyargs + args combined
+    total_positional = num_posonlyargs + num_args
+    defaults_start = total_positional - num_defaults
+    
+    for i, arg in enumerate(args.posonlyargs):
+        type_hint = _get_annotation_string(arg.annotation) if arg.annotation else None
         
-        # Get default value
+        # Check if this parameter has a default
+        default_index = i - defaults_start
+        has_default = default_index >= 0
         default_value = None
-        has_default = False
-        default_index = i - defaults_offset
-        if default_index >= 0 and default_index < len(args.defaults):
-            has_default = True
+        if has_default and default_index < num_defaults:
             default_value = _get_default_string(args.defaults[default_index])
         
         parameters.append(ParameterInfo(
             name=arg.arg,
             type_hint=type_hint,
             default_value=default_value,
-            has_default=has_default
+            has_default=has_default,
+            kind="positional_only"
         ))
     
-    # Handle *args
+    # 2. Positional-or-keyword parameters (normal args)
+    for i, arg in enumerate(args.args):
+        type_hint = _get_annotation_string(arg.annotation) if arg.annotation else None
+        
+        # Calculate default index (accounting for posonlyargs)
+        global_index = num_posonlyargs + i
+        default_index = global_index - defaults_start
+        has_default = default_index >= 0
+        default_value = None
+        if has_default and default_index < num_defaults:
+            default_value = _get_default_string(args.defaults[default_index])
+        
+        parameters.append(ParameterInfo(
+            name=arg.arg,
+            type_hint=type_hint,
+            default_value=default_value,
+            has_default=has_default,
+            kind="positional_or_keyword"
+        ))
+    
+    # 3. *args (var_positional)
     if args.vararg:
-        type_hint = None
-        if args.vararg.annotation:
-            type_hint = _get_annotation_string(args.vararg.annotation)
+        type_hint = _get_annotation_string(args.vararg.annotation) if args.vararg.annotation else None
         parameters.append(ParameterInfo(
             name=f"*{args.vararg.arg}",
-            type_hint=type_hint
+            type_hint=type_hint,
+            has_default=False,
+            kind="var_positional"
         ))
     
-    # Handle **kwargs
+    # 4. Keyword-only parameters (after * or *args)
+    # kw_defaults aligns with kwonlyargs (same length, None for no default)
+    for i, arg in enumerate(args.kwonlyargs):
+        type_hint = _get_annotation_string(arg.annotation) if arg.annotation else None
+        
+        # kw_defaults[i] is None if no default, otherwise the default node
+        kw_default = args.kw_defaults[i] if i < len(args.kw_defaults) else None
+        has_default = kw_default is not None
+        default_value = _get_default_string(kw_default) if kw_default else None
+        
+        parameters.append(ParameterInfo(
+            name=arg.arg,
+            type_hint=type_hint,
+            default_value=default_value,
+            has_default=has_default,
+            kind="keyword_only"
+        ))
+    
+    # 5. **kwargs (var_keyword)
     if args.kwarg:
-        type_hint = None
-        if args.kwarg.annotation:
-            type_hint = _get_annotation_string(args.kwarg.annotation)
+        type_hint = _get_annotation_string(args.kwarg.annotation) if args.kwarg.annotation else None
         parameters.append(ParameterInfo(
             name=f"**{args.kwarg.arg}",
-            type_hint=type_hint
+            type_hint=type_hint,
+            has_default=False,
+            kind="var_keyword"
         ))
     
     return parameters
