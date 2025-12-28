@@ -2,7 +2,7 @@
 Pytest Generator MCP Server
 
 A Model Context Protocol server that generates pytest tests
-using static code analysis (no AI required).
+using static code analysis and AI enhancement.
 """
 
 import asyncio
@@ -15,7 +15,6 @@ from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
 from .core import analyze_code
-from .generators import generate_tests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -86,21 +85,23 @@ async def list_tools() -> list[Tool]:
             }
         ),
         Tool(
-            name="calculate_coverage",
-            description="Estimate potential test coverage for Python code. "
-                        "Returns coverage metrics and improvement suggestions.",
+            name="run_tests",
+            description="Execute pytest tests and measure code coverage. "
+                        "Takes source code and generated test code, runs the tests in an "
+                        "isolated environment, and returns pass/fail results with coverage metrics.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "file_path": {
+                    "source_code": {
                         "type": "string",
-                        "description": "Path to the Python file to analyze coverage for"
+                        "description": "The Python source code to test"
                     },
-                    "code": {
+                    "test_code": {
                         "type": "string",
-                        "description": "Python code content (alternative to file_path)"
+                        "description": "The pytest test code to execute"
                     }
-                }
+                },
+                "required": ["source_code", "test_code"]
             }
         ),
     ]
@@ -109,8 +110,6 @@ async def list_tools() -> list[Tool]:
 def _get_code(arguments: dict) -> tuple[str | None, str | None]:
     """
     Get code from arguments (either file_path or code).
-    
-    Priority: file_path first, fallback to code if file fails.
     
     Returns:
         Tuple of (code, error_message)
@@ -145,7 +144,6 @@ def _get_module_name(file_path: str | None) -> str:
     if not file_path:
         return "module"
     
-    # Get filename without extension
     basename = os.path.basename(file_path)
     name = os.path.splitext(basename)[0]
     return name
@@ -154,7 +152,7 @@ def _get_module_name(file_path: str | None) -> str:
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """Handle tool calls."""
-    logger.info(f"Tool called: {name} with arguments: {arguments}")
+    logger.info(f"Tool called: {name} with arguments: {list(arguments.keys())}")
     
     if name == "analyze_code":
         return await handle_analyze_code(arguments)
@@ -162,11 +160,8 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     elif name == "generate_tests":
         return await handle_generate_tests(arguments)
     
-    elif name == "calculate_coverage":
-        return [TextContent(
-            type="text",
-            text="🚧 calculate_coverage - Not yet implemented"
-        )]
+    elif name == "run_tests":
+        return await handle_run_tests(arguments)
     
     else:
         return [TextContent(
@@ -178,7 +173,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 async def handle_analyze_code(arguments: dict) -> list[TextContent]:
     """Handle the analyze_code tool."""
     
-    # Get code from file_path or code argument
     code, error = _get_code(arguments)
     
     if error:
@@ -187,17 +181,14 @@ async def handle_analyze_code(arguments: dict) -> list[TextContent]:
             text=f"Error: {error}"
         )]
     
-    # Analyze the code
     result = analyze_code(code)
     
-    # Format response
     if not result.valid:
         return [TextContent(
             type="text",
             text=f"Invalid code: {result.error}"
         )]
     
-    # Build response
     response = {
         "valid": result.valid,
         "statistics": {
@@ -236,7 +227,6 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     """Handle the generate_tests tool."""
     from .generators import generate_tests, generate_tests_with_ai
     
-    # Get code from file_path or code argument
     code, error = _get_code(arguments)
     
     if error:
@@ -245,17 +235,14 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
             text=f"Error: {error}"
         )]
     
-    # Get options
     file_path = arguments.get("file_path")
     output_path = arguments.get("output_path")
     include_edge_cases = arguments.get("include_edge_cases", True)
     use_ai = arguments.get("use_ai", False)
     api_key = arguments.get("api_key")
     
-    # Get module name
     module_name = _get_module_name(file_path)
     
-    # Analyze the code first
     analysis = analyze_code(code)
     
     if not analysis.valid:
@@ -264,7 +251,6 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
             text=f"Cannot generate tests: {analysis.error}"
         )]
     
-    # Generate tests (with or without AI)
     if use_ai:
         result = generate_tests_with_ai(
             analysis=analysis,
@@ -283,10 +269,8 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
         )
         mode = "Template"
     
-    # Get the generated code
     test_code = result.to_code()
     
-    # Save to file if output_path provided
     if output_path:
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
@@ -297,7 +281,6 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     else:
         save_message = ""
     
-    # Build response
     response_parts = [
         f"Generated {len(result.test_cases)} test(s) for {len(analysis.functions)} function(s) and {len(analysis.classes)} class(es)",
         f"Mode: {mode}",
@@ -305,7 +288,6 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
         "Test breakdown by evidence source:",
     ]
     
-    # Count by evidence source
     evidence_counts = {}
     for test in result.test_cases:
         source = test.evidence_source
@@ -327,6 +309,92 @@ async def handle_generate_tests(arguments: dict) -> list[TextContent]:
     response_parts.append("")
     response_parts.append(test_code)
     response_parts.append(save_message)
+    
+    return [TextContent(
+        type="text",
+        text="\n".join(response_parts)
+    )]
+
+
+async def handle_run_tests(arguments: dict) -> list[TextContent]:
+    """Handle the run_tests tool."""
+    from .runner import run_tests
+    
+    source_code = arguments.get("source_code")
+    test_code = arguments.get("test_code")
+    
+    # Validate inputs
+    if not source_code:
+        return [TextContent(
+            type="text",
+            text="Error: 'source_code' is required"
+        )]
+    
+    if not test_code:
+        return [TextContent(
+            type="text",
+            text="Error: 'test_code' is required"
+        )]
+    
+    # Run tests
+    result = run_tests(source_code, test_code)
+    
+    # Build response
+    response_parts = [
+        "TEST EXECUTION RESULTS",
+        "=" * 50,
+        "",
+    ]
+    
+    # Summary
+    if result.success:
+        response_parts.append(f"All tests passed!")
+    else:
+        response_parts.append(f"Some tests failed")
+    
+    response_parts.append("")
+    response_parts.append("Summary:")
+    response_parts.append(f"  • Total:  {result.total}")
+    response_parts.append(f"  • Passed: {result.passed}")
+    response_parts.append(f"  • Failed: {result.failed}")
+    
+    if result.errors > 0:
+        response_parts.append(f"  • Errors: {result.errors}")
+    
+    # Coverage
+    if result.coverage:
+        response_parts.append("")
+        response_parts.append("Code Coverage:")
+        response_parts.append(f"  • Coverage: {result.coverage.percentage:.1f}%")
+        response_parts.append(f"  • Lines covered: {result.coverage.covered_lines}/{result.coverage.total_lines}")
+        
+        if result.coverage.missing_lines:
+            missing_str = ", ".join(str(l) for l in result.coverage.missing_lines[:10])
+            if len(result.coverage.missing_lines) > 10:
+                missing_str += f"... (+{len(result.coverage.missing_lines) - 10} more)"
+            response_parts.append(f"  • Missing lines: {missing_str}")
+    
+    # Passed tests
+    if result.passed_tests:
+        response_parts.append("")
+        response_parts.append("Passed tests:")
+        for test_name in result.passed_tests:
+            response_parts.append(f"  • {test_name}")
+    
+    # Failed tests
+    if result.failed_tests:
+        response_parts.append("")
+        response_parts.append("Failed tests:")
+        for failed in result.failed_tests:
+            response_parts.append(f"  • {failed['name']}")
+            if failed.get('error'):
+                response_parts.append(f"    Error: {failed['error']}")
+    
+    # Error message
+    if result.error_message:
+        response_parts.append("")
+        response_parts.append("Error:")
+        response_parts.append(f"  {result.error_message}")
     
     return [TextContent(
         type="text",
