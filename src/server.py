@@ -3,19 +3,37 @@ Pytest Generator MCP Server
 
 A Model Context Protocol server that generates pytest tests
 using static code analysis and AI enhancement.
+
+Architecture:
+------------
+This module is now THIN. It only handles:
+1. MCP protocol (Tool definitions, TextContent responses)
+2. Argument parsing (dict → service method args)
+3. Response formatting (service results → text)
+
+All business logic lives in the services layer.
 """
+
+from __future__ import annotations
 
 import asyncio
 import json
 import logging
-import os
-from pathlib import Path
+
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from .analyzer import analyze_code
-from .constants import MAX_CODE_SIZE, ALLOWED_EXTENSIONS
+# Services (all business logic)
+from .services import (
+    AnalysisService,
+    GenerationService,
+    ExecutionService,
+    FixingService,
+    ServiceResult,
+)
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,15 +42,21 @@ logger = logging.getLogger(__name__)
 server = Server("pytest-generator")
 
 
+# =============================================================================
+# Tool Definitions
+# =============================================================================
+
 @server.list_tools()
 async def list_tools() -> list[Tool]:
     """List all available tools."""
     return [
         Tool(
             name="analyze_code",
-            description="Analyze Python code structure. Validates syntax, extracts functions, "
-                        "classes, methods, and calculates complexity. Returns warnings for "
-                        "missing type hints and high complexity.",
+            description=(
+                "Analyze Python code structure. Validates syntax, extracts functions, "
+                "classes, methods, and calculates complexity. Returns warnings for "
+                "missing type hints and high complexity."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -49,11 +73,13 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="generate_tests",
-            description="Generate pytest test cases for Python code. "
-                        "Uses template-based generation with evidence-based enrichment: "
-                        "doctest extraction, type assertions, exception detection, "
-                        "boundary values, and naming heuristics. "
-                        "Optionally uses AI to enhance assertions with real expected values.",
+            description=(
+                "Generate pytest test cases for Python code. "
+                "Uses template-based generation with evidence-based enrichment: "
+                "doctest extraction, type assertions, exception detection, "
+                "boundary values, and naming heuristics. "
+                "Optionally uses AI to enhance assertions with real expected values."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -75,20 +101,22 @@ async def list_tools() -> list[Tool]:
                     },
                     "use_ai": {
                         "type": "boolean",
-                        "description": "Whether to use AI to enhance tests with real expected values (default: false)"
+                        "description": "Whether to use AI to enhance tests (default: false)"
                     },
                     "api_key": {
                         "type": "string",
-                        "description": "OpenAI API key (optional, uses OPENAI_API_KEY env var if not provided)"
+                        "description": "OpenAI API key (optional, uses env var if not provided)"
                     }
                 }
             }
         ),
         Tool(
             name="run_tests",
-            description="Execute pytest tests and measure code coverage. "
-                        "Takes source code and generated test code, runs the tests in an "
-                        "isolated environment, and returns pass/fail results with coverage metrics.",
+            description=(
+                "Execute pytest tests and measure code coverage. "
+                "Takes source code and test code, runs in isolated environment, "
+                "returns pass/fail results with coverage metrics."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -106,10 +134,11 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="fix_code",
-            description="Automatically fix bugs in Python code based on failing tests. "
-                        "Analyzes test failures, identifies bugs in the source code, "
-                        "generates minimal fixes using AI, and verifies the fix by re-running tests. "
-                        "Completes the test-driven development loop: generate tests → run tests → fix failures.",
+            description=(
+                "Automatically fix bugs in Python code based on failing tests. "
+                "Analyzes test failures, identifies bugs, generates minimal fixes using AI, "
+                "and verifies the fix by re-running tests."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -131,7 +160,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "api_key": {
                         "type": "string",
-                        "description": "OpenAI API key (optional, uses OPENAI_API_KEY env var if not provided)"
+                        "description": "OpenAI API key (optional, uses env var if not provided)"
                     }
                 },
                 "required": ["source_code", "test_code"]
@@ -140,121 +169,54 @@ async def list_tools() -> list[Tool]:
     ]
 
 
-def _get_code(arguments: dict) -> tuple[str | None, str | None]:
-    """
-    Get code from arguments (either file_path or code).
-    
-    Returns:
-        Tuple of (code, error_message)
-    """
-    file_path = arguments.get("file_path")
-    code = arguments.get("code")
-    
-    if file_path:
-        # Validate file path
-        path = Path(file_path)
-        
-        # Check extension
-        if path.suffix not in ALLOWED_EXTENSIONS:
-            return None, f"Only Python files allowed (got {path.suffix})"
-        
-        # Check file exists
-        if not path.exists():
-            if code:
-                return code, None
-            return None, f"File not found: {file_path}"
-        
-        # Check it's a file, not directory
-        if not path.is_file():
-            return None, f"Path is not a file: {file_path}"
-        
-        try:
-            content = path.read_text(encoding='utf-8')
-        except PermissionError:
-            if code:
-                return code, None
-            return None, f"Permission denied: {file_path}"
-        except Exception as e:
-            if code:
-                return code, None
-            return None, f"Error reading file: {str(e)}"
-        
-        # Check size
-        if len(content) > MAX_CODE_SIZE:
-            return None, f"File too large: {len(content)} bytes (max: {MAX_CODE_SIZE})"
-        
-        return content, None
-    
-    elif code:
-        # Check size for direct code input too
-        if len(code) > MAX_CODE_SIZE:
-            return None, f"Code too large: {len(code)} bytes (max: {MAX_CODE_SIZE})"
-        return code, None
-    
-    else:
-        return None, "Please provide either 'file_path' or 'code'"
-
-
-def _get_module_name(file_path: str | None) -> str:
-    """Extract module name from file path."""
-    if not file_path:
-        return "module"
-    
-    basename = os.path.basename(file_path)
-    name = os.path.splitext(basename)[0]
-    return name
-
+# =============================================================================
+# Tool Router
+# =============================================================================
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-    """Handle tool calls."""
-    logger.info(f"Tool called: {name} with arguments: {list(arguments.keys())}")
+    """Route tool calls to handlers."""
+    logger.info(f"Tool called: {name}")
     
-    if name == "analyze_code":
-        return await handle_analyze_code(arguments)
+    handlers = {
+        "analyze_code": handle_analyze,
+        "generate_tests": handle_generate,
+        "run_tests": handle_run,
+        "fix_code": handle_fix,
+    }
     
-    elif name == "generate_tests":
-        return await handle_generate_tests(arguments)
+    handler = handlers.get(name)
+    if handler:
+        return await handler(arguments)
     
-    elif name == "run_tests":
-        return await handle_run_tests(arguments)
-    
-    elif name == "fix_code":
-        return await handle_fix_code(arguments)
-    
-    else:
-        return [TextContent(
-            type="text",
-            text=f"Unknown tool: {name}"
-        )]
+    return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
 
-async def handle_analyze_code(arguments: dict) -> list[TextContent]:
-    """Handle the analyze_code tool."""
+# =============================================================================
+# Handlers (THIN - parse → call service → format)
+# =============================================================================
+
+async def handle_analyze(arguments: dict) -> list[TextContent]:
+    """Handle analyze_code tool."""
+    service = AnalysisService()
     
-    code, error = _get_code(arguments)
+    result = service.analyze(
+        code=arguments.get("code"),
+        file_path=arguments.get("file_path")
+    )
     
-    if error:
-        return [TextContent(
-            type="text",
-            text=f"Error: {error}"
-        )]
+    if not result.success:
+        return _error_response(result)
     
-    result = analyze_code(code)
-    
-    if not result.valid:
-        return [TextContent(
-            type="text",
-            text=f"Invalid code: {result.error}"
-        )]
-    
+    # Format as JSON (matches original behavior)
+    analysis = result.data
     response = {
-        "valid": result.valid,
+        "valid": analysis.valid,
         "statistics": {
-            "total_functions": result.total_functions,
-            "total_classes": result.total_classes,
-            "average_complexity": result.average_complexity,
-            "type_hint_coverage": f"{result.type_hint_coverage}%"
+            "total_functions": analysis.total_functions,
+            "total_classes": analysis.total_classes,
+            "average_complexity": analysis.average_complexity,
+            "type_hint_coverage": f"{analysis.type_hint_coverage}%"
         },
         "functions": [
             {
@@ -264,294 +226,240 @@ async def handle_analyze_code(arguments: dict) -> list[TextContent]:
                 "complexity": f.complexity,
                 "has_docstring": f.docstring is not None
             }
-            for f in result.functions
+            for f in analysis.functions
         ],
         "classes": [
             {
                 "name": c.name,
                 "methods": [m.name for m in c.methods]
             }
-            for c in result.classes
+            for c in analysis.classes
         ],
-        "warnings": result.warnings
+        "warnings": analysis.warnings
     }
     
-    return [TextContent(
-        type="text",
-        text=json.dumps(response, indent=2)
-    )]
+    return [TextContent(type="text", text=json.dumps(response, indent=2))]
 
 
-async def handle_generate_tests(arguments: dict) -> list[TextContent]:
-    """Handle the generate_tests tool."""
-    from .generators import generate_tests, generate_tests_with_ai
+async def handle_generate(arguments: dict) -> list[TextContent]:
+    """Handle generate_tests tool."""
+    service = GenerationService()
     
-    code, error = _get_code(arguments)
+    result = service.generate(
+        code=arguments.get("code"),
+        file_path=arguments.get("file_path"),
+        output_path=arguments.get("output_path"),
+        include_edge_cases=arguments.get("include_edge_cases", True),
+        use_ai=arguments.get("use_ai", False),
+        api_key=arguments.get("api_key")
+    )
     
-    if error:
-        return [TextContent(
-            type="text",
-            text=f"Error: {error}"
-        )]
+    if not result.success:
+        return _error_response(result)
     
-    file_path = arguments.get("file_path")
-    output_path = arguments.get("output_path")
-    include_edge_cases = arguments.get("include_edge_cases", True)
-    use_ai = arguments.get("use_ai", False)
-    api_key = arguments.get("api_key")
+    gen_result = result.data
+    tests = gen_result.tests
+    meta = gen_result.metadata
     
-    module_name = _get_module_name(file_path)
-    
-    analysis = analyze_code(code)
-    
-    if not analysis.valid:
-        return [TextContent(
-            type="text",
-            text=f"Cannot generate tests: {analysis.error}"
-        )]
-    
-    if use_ai:
-        result = generate_tests_with_ai(
-            analysis=analysis,
-            source_code=code,
-            module_name=module_name,
-            include_edge_cases=include_edge_cases,
-            api_key=api_key
-        )
-        mode = "AI-enhanced"
-    else:
-        result = generate_tests(
-            analysis=analysis,
-            source_code=code,
-            module_name=module_name,
-            include_edge_cases=include_edge_cases
-        )
-        mode = "Template"
-    
-    test_code = result.to_code()
-    
-    if output_path:
-        try:
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(test_code)
-            save_message = f"\n\nTests saved to: {output_path}"
-        except Exception as e:
-            save_message = f"\n\nCould not save to file: {str(e)}"
-    else:
-        save_message = ""
-    
-    response_parts = [
-        f"Generated {len(result.test_cases)} test(s) for {len(analysis.functions)} function(s) and {len(analysis.classes)} class(es)",
-        f"Mode: {mode}",
+    # Build response text
+    lines = [
+        f"Generated {len(tests.test_cases)} test(s) for "
+        f"{meta.function_count} function(s) and {meta.class_count} class(es)",
+        f"Mode: {meta.mode}",
         "",
         "Test breakdown by evidence source:",
     ]
     
-    evidence_counts = {}
-    for test in result.test_cases:
+    # Count by evidence source
+    evidence_counts: dict[str, int] = {}
+    for test in tests.test_cases:
         source = test.evidence_source
         evidence_counts[source] = evidence_counts.get(source, 0) + 1
     
     for source, count in sorted(evidence_counts.items()):
-        response_parts.append(f"  • {source}: {count} test(s)")
+        lines.append(f"  • {source}: {count} test(s)")
     
-    if result.warnings:
-        response_parts.append("")
-        response_parts.append("Warnings/Notes:")
-        for warning in result.warnings:
-            response_parts.append(f"  • {warning}")
+    # Warnings
+    if tests.warnings:
+        lines.append("")
+        lines.append("Warnings/Notes:")
+        for warning in tests.warnings:
+            lines.append(f"  • {warning}")
     
-    response_parts.append("")
-    response_parts.append("=" * 60)
-    response_parts.append("GENERATED TEST CODE:")
-    response_parts.append("=" * 60)
-    response_parts.append("")
-    response_parts.append(test_code)
-    response_parts.append(save_message)
+    # Saved path
+    if meta.saved_to:
+        lines.append(f"\nTests saved to: {meta.saved_to}")
     
-    return [TextContent(
-        type="text",
-        text="\n".join(response_parts)
-    )]
+    # Generated code
+    lines.extend([
+        "",
+        "=" * 60,
+        "GENERATED TEST CODE:",
+        "=" * 60,
+        "",
+        tests.to_code()
+    ])
+    
+    return [TextContent(type="text", text="\n".join(lines))]
 
 
-async def handle_run_tests(arguments: dict) -> list[TextContent]:
-    """Handle the run_tests tool."""
-    from .runner import run_tests
+async def handle_run(arguments: dict) -> list[TextContent]:
+    """Handle run_tests tool."""
+    service = ExecutionService()
     
-    source_code = arguments.get("source_code")
-    test_code = arguments.get("test_code")
+    result = service.run(
+        source_code=arguments.get("source_code", ""),
+        test_code=arguments.get("test_code", "")
+    )
     
-    # Validate inputs
-    if not source_code:
-        return [TextContent(
-            type="text",
-            text="Error: 'source_code' is required"
-        )]
+    if not result.success:
+        return _error_response(result)
     
-    if not test_code:
-        return [TextContent(
-            type="text",
-            text="Error: 'test_code' is required"
-        )]
+    run_result = result.data
     
-    # Run tests
-    result = run_tests(source_code, test_code)
-    
-    # Build response
-    response_parts = [
+    # Build response text
+    lines = [
         "TEST EXECUTION RESULTS",
         "=" * 50,
         "",
+        "✅ All tests passed!" if run_result.success else "❌ Some tests failed",
+        "",
+        "Summary:",
+        f"  • Total:  {run_result.total}",
+        f"  • Passed: {run_result.passed}",
+        f"  • Failed: {run_result.failed}",
     ]
     
-    # Summary
-    if result.success:
-        response_parts.append(f"All tests passed!")
-    else:
-        response_parts.append(f"Some tests failed")
-    
-    response_parts.append("")
-    response_parts.append("Summary:")
-    response_parts.append(f"  • Total:  {result.total}")
-    response_parts.append(f"  • Passed: {result.passed}")
-    response_parts.append(f"  • Failed: {result.failed}")
-    
-    if result.errors > 0:
-        response_parts.append(f"  • Errors: {result.errors}")
+    if run_result.errors > 0:
+        lines.append(f"  • Errors: {run_result.errors}")
     
     # Coverage
-    if result.coverage:
-        response_parts.append("")
-        response_parts.append("Code Coverage:")
-        response_parts.append(f"  • Coverage: {result.coverage.percentage:.1f}%")
-        response_parts.append(f"  • Lines covered: {result.coverage.covered_lines}/{result.coverage.total_lines}")
-        
-        if result.coverage.missing_lines:
-            missing_str = ", ".join(str(l) for l in result.coverage.missing_lines[:10])
-            if len(result.coverage.missing_lines) > 10:
-                missing_str += f"... (+{len(result.coverage.missing_lines) - 10} more)"
-            response_parts.append(f"  • Missing lines: {missing_str}")
+    if run_result.coverage:
+        cov = run_result.coverage
+        lines.extend([
+            "",
+            "Code Coverage:",
+            f"  • Coverage: {cov.percentage:.1f}%",
+            f"  • Lines covered: {cov.covered_lines}/{cov.total_lines}",
+        ])
+        if cov.missing_lines:
+            missing = ", ".join(str(l) for l in cov.missing_lines[:10])
+            if len(cov.missing_lines) > 10:
+                missing += f"... (+{len(cov.missing_lines) - 10} more)"
+            lines.append(f"  • Missing lines: {missing}")
     
     # Passed tests
-    if result.passed_tests:
-        response_parts.append("")
-        response_parts.append("Passed tests:")
-        for test_name in result.passed_tests:
-            response_parts.append(f"  • {test_name}")
+    if run_result.passed_tests:
+        lines.append("")
+        lines.append("Passed tests:")
+        for name in run_result.passed_tests:
+            lines.append(f"  ✓ {name}")
     
     # Failed tests
-    if result.failed_tests:
-        response_parts.append("")
-        response_parts.append("Failed tests:")
-        for failed in result.failed_tests:
-            response_parts.append(f"  • {failed['name']}")
-            if failed.get('error'):
-                response_parts.append(f"    Error: {failed['error']}")
+    if run_result.failed_tests:
+        lines.append("")
+        lines.append("Failed tests:")
+        for failed in run_result.failed_tests:
+            lines.append(f"  ✗ {failed['name']}")
+            if failed.get("error"):
+                lines.append(f"    Error: {failed['error']}")
     
     # Error message
-    if result.error_message:
-        response_parts.append("")
-        response_parts.append("Error:")
-        response_parts.append(f"  {result.error_message}")
+    if run_result.error_message:
+        lines.append("")
+        lines.append(f"Error: {run_result.error_message}")
     
-    return [TextContent(
-        type="text",
-        text="\n".join(response_parts)
-    )]
+    return [TextContent(type="text", text="\n".join(lines))]
 
 
-async def handle_fix_code(arguments: dict) -> list[TextContent]:
-    """Handle the fix_code tool."""
-    from .fixer import fix_code
+async def handle_fix(arguments: dict) -> list[TextContent]:
+    """Handle fix_code tool."""
+    service = FixingService()
     
-    source_code = arguments.get("source_code")
-    test_code = arguments.get("test_code")
-    test_output = arguments.get("test_output")
-    verify = arguments.get("verify", True)
-    api_key = arguments.get("api_key")
-    
-    # Validate inputs
-    if not source_code:
-        return [TextContent(
-            type="text",
-            text="Error: 'source_code' is required"
-        )]
-    
-    if not test_code:
-        return [TextContent(
-            type="text",
-            text="Error: 'test_code' is required"
-        )]
-    
-    # Run the fixer
-    result = fix_code(
-        source_code=source_code,
-        test_code=test_code,
-        test_output=test_output,
-        verify=verify,
-        api_key=api_key
+    result = service.fix(
+        source_code=arguments.get("source_code", ""),
+        test_code=arguments.get("test_code", ""),
+        test_output=arguments.get("test_output"),
+        verify=arguments.get("verify", True),
+        api_key=arguments.get("api_key")
     )
     
-    # Build response
-    response_parts = [
+    if not result.success:
+        return _error_response(result)
+    
+    fix_result = result.data
+    
+    # Build response text
+    lines = [
         "🔧 CODE FIX RESULTS",
         "=" * 50,
         "",
     ]
     
-    if not result.success:
-        response_parts.append(f"❌ Fix failed: {result.error}")
-        return [TextContent(
-            type="text",
-            text="\n".join(response_parts)
-        )]
+    if not fix_result.success:
+        lines.append(f"❌ Fix failed: {fix_result.error}")
+        return [TextContent(type="text", text="\n".join(lines))]
     
-    # Success case
-    response_parts.append(f"✅ Fix generated successfully!")
-    response_parts.append(f"Confidence: {result.confidence}")
-    response_parts.append("")
+    lines.extend([
+        "✅ Fix generated successfully!",
+        f"Confidence: {fix_result.confidence}",
+        ""
+    ])
     
     # Bugs found
-    if result.bugs_found:
-        response_parts.append(f"🐛 Bugs Found ({len(result.bugs_found)}):")
-        for i, bug in enumerate(result.bugs_found, 1):
-            line_info = f"[Line {bug.line_number}] " if bug.line_number else ""
-            response_parts.append(f"  {i}. {line_info}{bug.description}")
-        response_parts.append("")
+    if fix_result.bugs_found:
+        lines.append(f"🐛 Bugs Found ({len(fix_result.bugs_found)}):")
+        for i, bug in enumerate(fix_result.bugs_found, 1):
+            loc = f"[Line {bug.line_number}] " if bug.line_number else ""
+            lines.append(f"  {i}. {loc}{bug.description}")
+        lines.append("")
     
     # Fixes applied
-    if result.fixes_applied:
-        response_parts.append(f"🔨 Fixes Applied ({len(result.fixes_applied)}):")
-        for i, fix in enumerate(result.fixes_applied, 1):
-            line_info = f"[Line {fix.line_number}] " if fix.line_number else ""
-            response_parts.append(f"  {i}. {line_info}{fix.description}")
-            response_parts.append(f"     Reason: {fix.reason}")
-        response_parts.append("")
+    if fix_result.fixes_applied:
+        lines.append(f"🔨 Fixes Applied ({len(fix_result.fixes_applied)}):")
+        for i, fix in enumerate(fix_result.fixes_applied, 1):
+            loc = f"[Line {fix.line_number}] " if fix.line_number else ""
+            lines.append(f"  {i}. {loc}{fix.description}")
+            lines.append(f"     Reason: {fix.reason}")
+        lines.append("")
     
-    # Verification results
-    if result.verification:
-        response_parts.append("🧪 Verification:")
-        if result.verification.passed:
-            response_parts.append(f"  ✅ All tests pass! ({result.verification.tests_passed}/{result.verification.tests_total})")
+    # Verification
+    if fix_result.verification:
+        v = fix_result.verification
+        lines.append("🧪 Verification:")
+        if v.passed:
+            lines.append(f"  ✅ All tests pass! ({v.tests_passed}/{v.tests_total})")
         else:
-            response_parts.append(f"  ⚠️ Some tests still failing: {result.verification.tests_passed}/{result.verification.tests_total} passed")
-            if result.verification.error_message:
-                response_parts.append(f"  Error: {result.verification.error_message}")
-        response_parts.append("")
+            lines.append(f"  ⚠️ {v.tests_passed}/{v.tests_total} tests pass")
+            if v.error_message:
+                lines.append(f"  Error: {v.error_message}")
+        lines.append("")
     
     # Fixed code
-    response_parts.append("=" * 50)
-    response_parts.append("FIXED CODE:")
-    response_parts.append("=" * 50)
-    response_parts.append("")
-    response_parts.append(result.fixed_code)
+    lines.extend([
+        "=" * 50,
+        "FIXED CODE:",
+        "=" * 50,
+        "",
+        fix_result.fixed_code or ""
+    ])
     
-    return [TextContent(
-        type="text",
-        text="\n".join(response_parts)
-    )]
+    return [TextContent(type="text", text="\n".join(lines))]
 
+
+# =============================================================================
+# Helpers
+# =============================================================================
+
+def _error_response(result: ServiceResult) -> list[TextContent]:
+    """Create error response from failed ServiceResult."""
+    error = result.error
+    return [TextContent(type="text", text=f"Error: {error.message}")]
+
+
+# =============================================================================
+# Entry Point
+# =============================================================================
 
 async def run_server():
     """Run the MCP server."""
