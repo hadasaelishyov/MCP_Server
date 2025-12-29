@@ -166,9 +166,13 @@ def _parse_type_parts(parts: list[str]) -> ParsedType:
         elif part in SIMPLE_TYPES:
             base_types.append(part)
         else:
-            # Unknown/complex type - could be a class, generic, etc.
-            base_types.append(part)
-            all_valid = False
+            # Recursively parse complex parts
+            inner_parsed = parse_type_hint(part)
+            if inner_parsed.allows_none:
+                allows_none = True
+            base_types.extend(inner_parsed.base_types)
+            if not inner_parsed.is_valid:
+                all_valid = False
     
     return ParsedType(
         base_types=base_types,

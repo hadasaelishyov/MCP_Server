@@ -320,8 +320,12 @@ class TestRunner:
             return None
         
         try:
-            with open(coverage_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            content = coverage_file.read_text(encoding='utf-8')
+            if not content.strip():
+                return None
+            
+            data = json.loads(content)
+
             
             # Get totals
             totals = data.get('totals', {})

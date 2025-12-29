@@ -26,6 +26,11 @@ def analyze_code(code: str) -> AnalysisResult:
     Returns:
         AnalysisResult with all analysis data
     """
+    if not code or not code.strip():
+        return AnalysisResult(
+            valid=False,
+            error="Empty code provided"
+        )
     # Step 1: Validate syntax
     syntax_result = validate_syntax(code)
     
