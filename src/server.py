@@ -9,13 +9,13 @@ import asyncio
 import json
 import logging
 import os
-
+from pathlib import Path
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
 from .analyzer import analyze_code
-
+from .constants import MAX_CODE_SIZE, ALLOWED_EXTENSIONS
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -151,13 +151,25 @@ def _get_code(arguments: dict) -> tuple[str | None, str | None]:
     code = arguments.get("code")
     
     if file_path:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read(), None
-        except FileNotFoundError:
+        # Validate file path
+        path = Path(file_path)
+        
+        # Check extension
+        if path.suffix not in ALLOWED_EXTENSIONS:
+            return None, f"Only Python files allowed (got {path.suffix})"
+        
+        # Check file exists
+        if not path.exists():
             if code:
                 return code, None
             return None, f"File not found: {file_path}"
+        
+        # Check it's a file, not directory
+        if not path.is_file():
+            return None, f"Path is not a file: {file_path}"
+        
+        try:
+            content = path.read_text(encoding='utf-8')
         except PermissionError:
             if code:
                 return code, None
@@ -166,8 +178,19 @@ def _get_code(arguments: dict) -> tuple[str | None, str | None]:
             if code:
                 return code, None
             return None, f"Error reading file: {str(e)}"
+        
+        # Check size
+        if len(content) > MAX_CODE_SIZE:
+            return None, f"File too large: {len(content)} bytes (max: {MAX_CODE_SIZE})"
+        
+        return content, None
+    
     elif code:
+        # Check size for direct code input too
+        if len(code) > MAX_CODE_SIZE:
+            return None, f"Code too large: {len(code)} bytes (max: {MAX_CODE_SIZE})"
         return code, None
+    
     else:
         return None, "Please provide either 'file_path' or 'code'"
 
