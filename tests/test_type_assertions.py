@@ -13,7 +13,7 @@ Covers:
 """
 
 import pytest
-from src.generators.evidence.type_assertions import (
+from src.tools.core.generators.evidence.type_assertions import (
     generate_type_assertions,
     parse_type_hint,
     generate_isinstance_expression,

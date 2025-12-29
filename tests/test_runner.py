@@ -1,7 +1,7 @@
 """Tests for the test runner module."""
 
 import pytest
-from src.runner import run_tests, TestRunner, RunResult
+from src.tools.core.runner import run_tests, TestRunner, RunResult
 
 
 class TestRunnerBasics:

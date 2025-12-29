@@ -10,8 +10,8 @@ Tests cover:
 """
 
 import pytest
-from src.analyzer.parser import parse_code, extract_functions
-from src.analyzer.models import ParameterInfo
+from src.tools.core.analyzer.parser import parse_code, extract_functions
+from src.tools.core.analyzer.models import ParameterInfo
 
 
 class TestPositionalOnlyParameters:
@@ -326,7 +326,7 @@ class MyClass:
         pass
 """
         tree = parse_code(code)
-        from src.analyzer.parser import extract_classes
+        from src.tools.core.analyzer.parser import extract_classes
         classes = extract_classes(tree)
         
         method = classes[0].methods[0]

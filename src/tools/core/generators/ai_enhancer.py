@@ -15,7 +15,7 @@ from openai import OpenAI
 
 from .base import GeneratedTestCase
 
-from ..constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
+from ....constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
 
 @dataclass
 class EnhancementResult:

@@ -13,7 +13,7 @@ from __future__ import annotations
 from .base import ServiceResult, ErrorCode
 
 # Import existing domain models and functions
-from ..fixer import fix_code, FixResult
+from ..tools.core.fixer import fix_code, FixResult
 
 
 class FixingService:

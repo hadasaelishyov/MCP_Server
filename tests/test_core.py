@@ -1,8 +1,8 @@
 """Tests for core analyzer."""
 
 import pytest
-from src.analyzer import analyze_code
-from src.analyzer.parser import parse_code, extract_functions, extract_classes
+from src.tools.core.analyzer import analyze_code
+from src.tools.core.analyzer.parser import parse_code, extract_functions, extract_classes
 
 
 class TestParser:

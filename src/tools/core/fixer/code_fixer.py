@@ -16,7 +16,7 @@ from .models import (
     VerificationResult,
     ConfidenceLevel,
 )
-from ..constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
+from ....constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
 
 
 class CodeFixer:

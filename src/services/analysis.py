@@ -15,7 +15,7 @@ from .base import ServiceResult, ErrorCode
 from .code_loader import CodeLoader, LoadedCode
 
 # Import existing domain models
-from ..analyzer import analyze_code, AnalysisResult
+from ..tools.core.analyzer import analyze_code, AnalysisResult
 
 
 class AnalysisService:

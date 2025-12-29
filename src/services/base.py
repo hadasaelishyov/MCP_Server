@@ -51,6 +51,12 @@ class ErrorCode(str, Enum):
     EXECUTION_ERROR = "execution_error"
     TIMEOUT_ERROR = "timeout_error"
     
+    # GitHub operations
+    GITHUB_AUTH_ERROR = "github_auth_error"
+    GITHUB_REPO_NOT_FOUND = "github_repo_not_found"
+    GITHUB_CLONE_ERROR = "github_clone_error"
+    GITHUB_API_ERROR = "github_api_error"
+    
     # General
     INTERNAL_ERROR = "internal_error"
 

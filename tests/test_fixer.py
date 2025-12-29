@@ -17,7 +17,7 @@ except ImportError:
 
 from unittest.mock import Mock, patch
 
-from src.fixer import (
+from src.tools.core.fixer import (
     CodeFixer,
     fix_code,
     create_fixer,

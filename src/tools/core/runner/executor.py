@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 from .models import TestResult, CoverageResult, RunResult
-from ..constants import STDLIB_MODULES, TEST_TIMEOUT_SECONDS
+from ....constants import STDLIB_MODULES, TEST_TIMEOUT_SECONDS
 
 class TestRunner:
     """

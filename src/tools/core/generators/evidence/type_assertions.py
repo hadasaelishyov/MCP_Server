@@ -14,7 +14,7 @@ Principle: Better weak than wrong - never generate invalid isinstance checks.
 """
 
 from dataclasses import dataclass
-from ...constants import SIMPLE_TYPES, ISINSTANCE_MAPPING
+from .....constants import SIMPLE_TYPES, ISINSTANCE_MAPPING
 
 @dataclass
 class ParsedType:

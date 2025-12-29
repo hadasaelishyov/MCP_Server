@@ -13,7 +13,7 @@ from __future__ import annotations
 from .base import ServiceResult, ErrorCode
 
 # Import existing domain models and functions
-from ..runner import run_tests, RunResult
+from ..tools.core.runner import run_tests, RunResult
 
 
 class ExecutionService:

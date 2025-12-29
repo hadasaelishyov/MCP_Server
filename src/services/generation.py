@@ -20,7 +20,7 @@ from .code_loader import CodeLoader
 from .analysis import AnalysisService
 
 # Import existing domain models and functions
-from ..generators import generate_tests, generate_tests_with_ai, GeneratedTest
+from ..tools.core.generators import generate_tests, generate_tests_with_ai, GeneratedTest
 
 
 @dataclass(frozen=True)

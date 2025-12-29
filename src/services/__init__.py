@@ -81,6 +81,7 @@ from .analysis import AnalysisService
 from .generation import GenerationService, GenerationResult, GenerationMetadata
 from .execution import ExecutionService
 from .fixing import FixingService
+from .github import GitHubService, CloneResult, PRInfo, CommentInfo
 
 
 __all__ = [
@@ -98,6 +99,11 @@ __all__ = [
     "GenerationMetadata",
     "ExecutionService",
     "FixingService",
+    # GitHub
+    "GitHubService",
+    "CloneResult",
+    "PRInfo",
+    "CommentInfo",
 ]
 
 

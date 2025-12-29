@@ -1,10 +1,11 @@
 """
 Doctest Extractor - Parse examples from docstrings.
 
-Extracts >>> examples and their expected outputs.
+Extracts >>> examples and their expected outputs using Python's built-in doctest module.
 """
 
 import ast
+import doctest
 from dataclasses import dataclass
 
 
@@ -20,9 +21,8 @@ def extract_doctests(docstring: str | None) -> list[DoctestExample]:
     """
     Extract doctest examples from a docstring.
     
-    Looks for patterns like:
-        >>> function_call(args)
-        expected_result
+    Uses Python's built-in doctest.DocTestParser for reliable parsing,
+    including multi-line examples with ... continuation.
     
     Args:
         docstring: Function's docstring
@@ -33,40 +33,30 @@ def extract_doctests(docstring: str | None) -> list[DoctestExample]:
     if not docstring:
         return []
     
+    parser = doctest.DocTestParser()
     examples = []
-    lines = docstring.split('\n')
     
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
+    try:
+        parsed = parser.get_examples(docstring)
+    except ValueError:
+        # Malformed doctest
+        return []
+    
+    for ex in parsed:
+        # ex.source includes trailing newline, strip it
+        call = ex.source.rstrip('\n')
+        # ex.want is the expected output (empty string if none)
+        expected = ex.want.rstrip('\n')
         
-        # Look for >>> pattern
-        if line.startswith('>>>'):
-            call = line[3:].strip()
-            
-            # Check for multi-line call (ends with continuation)
-            while call.endswith('\\') and i + 1 < len(lines):
-                i += 1
-                call = call[:-1] + lines[i].strip()
-            
-            # Next non-empty, non->>> line is the expected result
-            i += 1
-            while i < len(lines):
-                next_line = lines[i].strip()
-                if next_line and not next_line.startswith('>>>'):
-                    expected = next_line
-                    examples.append(DoctestExample(
-                        call=call,
-                        expected=expected,
-                        line_number=i
-                    ))
-                    break
-                elif next_line.startswith('>>>'):
-                    # No expected value, skip this example
-                    i -= 1  # Reprocess this line
-                    break
-                i += 1
-        i += 1
+        # Skip examples with no expected output
+        if not expected:
+            continue
+        
+        examples.append(DoctestExample(
+            call=call,
+            expected=expected,
+            line_number=ex.lineno + 1  # Convert to 1-based line numbers
+        ))
     
     return examples
 
