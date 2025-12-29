@@ -4,7 +4,7 @@ Template Generator - Main test generation engine.
 Combines Layer 1 (basic templates) + Layer 2 (evidence-based enrichment).
 """
 
-from ..core.models import FunctionInfo, ClassInfo, AnalysisResult
+from ..analyzer.models import FunctionInfo, ClassInfo, AnalysisResult
 from .base import TestGeneratorBase, GeneratedTestCase, GeneratedTest
 from .evidence.doctest_extractor import extract_doctests, doctest_to_assertion
 from .evidence.type_assertions import generate_type_assertions

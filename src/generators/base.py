@@ -5,7 +5,7 @@ Allows swapping between template and AI generators.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from ..core.models import FunctionInfo, ClassInfo
+from ..analyzer.models import FunctionInfo, ClassInfo
 
 
 @dataclass

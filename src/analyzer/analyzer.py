@@ -4,8 +4,8 @@ Code Analyzer - Main analysis engine that combines parsing and validation.
 
 from .parser import parse_code, extract_functions, extract_classes
 from .models import AnalysisResult, FunctionInfo
-from ..validation.syntax_validator import validate_syntax
-from ..validation.type_hint_checker import check_type_hints
+from .syntax_validator import validate_syntax
+from .type_hint_checker import check_type_hints
 
 
 def analyze_code(code: str) -> AnalysisResult:

@@ -14,7 +14,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from .core import analyze_code
+from .analyzer import analyze_code
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

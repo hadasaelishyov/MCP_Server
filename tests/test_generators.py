@@ -1,7 +1,7 @@
 """Tests for the test generator."""
 
 import pytest
-from src.core import analyze_code
+from src.analyzer import analyze_code
 from src.generators import generate_tests, TemplateGenerator
 from src.generators.base import GeneratedTestCase, GeneratedTest
 
