@@ -1,7 +1,7 @@
 """Tests for the test runner module."""
 
 import pytest
-from src.tools.core.runner import run_tests, TestRunner, RunResult
+from src.core.runner import run_tests, PytestRunner, RunResult
 
 
 class TestRunnerBasics:
@@ -76,7 +76,7 @@ class TestModuleDetection:
 import pytest
 from calculator import add
 '''
-        runner = TestRunner("def add(a,b): return a+b", tests)
+        runner = PytestRunner("def add(a,b): return a+b", tests)
         assert runner.module_name == "calculator"
     
     def test_detect_default_module(self):
@@ -87,7 +87,7 @@ import pytest
 def test_something():
     pass
 '''
-        runner = TestRunner("x = 1", tests)
+        runner = PytestRunner("x = 1", tests)
         assert runner.module_name == "module"
     
     def test_skip_standard_imports(self):
@@ -98,7 +98,7 @@ from typing import List
 from collections import defaultdict
 from mymodule import func
 '''
-        runner = TestRunner("def func(): pass", tests)
+        runner = PytestRunner("def func(): pass", tests)
         assert runner.module_name == "mymodule"
 
 

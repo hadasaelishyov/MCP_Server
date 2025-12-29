@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import Mock, patch
 import os
 
-from src.tools.core.generators.ai_enhancer import AIEnhancer, EnhancementResult, create_enhancer
-from src.tools.core.generators.base import GeneratedTestCase
+from src.core.generators.ai import AIEnhancer, EnhancementResult, create_enhancer
+from src.core.generators.base import GeneratedTestCase
 
 
 class TestAIEnhancerInit:
@@ -166,7 +166,7 @@ class TestAIEnhancerFallback:
             if original_key:
                 os.environ["OPENAI_API_KEY"] = original_key
     
-    @patch("src.tools.core.generators.ai_enhancer.OpenAI")
+    @patch("src.core.generators.ai.OpenAI")
     def test_fallback_on_api_error(self, mock_openai_class):
         """Test returns original tests on API error."""
         # Setup mock to raise an error
@@ -195,7 +195,7 @@ class TestAIEnhancerFallback:
 class TestAIEnhancerIntegration:
     """Integration tests with mocked API."""
     
-    @patch("src.tools.core.generators.ai_enhancer.OpenAI")
+    @patch("src.core.generators.ai.OpenAI")
     def test_successful_enhancement(self, mock_openai_class):
         """Test successful AI enhancement."""
         # Setup mock response
@@ -238,7 +238,7 @@ SUGGESTIONS:
         assert len(result.enhanced_tests) > 0
         assert len(result.ai_suggestions) >= 1
     
-    @patch("src.tools.core.generators.ai_enhancer.OpenAI")
+    @patch("src.core.generators.ai.OpenAI")
     def test_enhancement_preserves_test_count(self, mock_openai_class):
         """Test that enhancement keeps all tests."""
         mock_response = Mock()

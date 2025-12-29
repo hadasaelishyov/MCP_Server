@@ -14,13 +14,13 @@ from pathlib import Path
 
 from src.services.github import GitHubService, CloneResult, PRInfo, CommentInfo
 from src.services.base import ErrorCode
-from src.tools.github.analyze_repository import (
+from src.handlers.github.analyze_repository import (
     FileAnalysis,
     RepositoryAnalysis,
     format_analysis,
 )
-from src.tools.github.create_test_pr import generate_pr_description
-from src.tools.github.comment_test_results import format_test_comment
+from src.handlers.github.create_test_pr import generate_pr_description
+from src.handlers.github.comment_test_results import format_test_comment
 
 
 # =============================================================================
@@ -295,7 +295,7 @@ class TestAnalyzeRepositoryIntegration:
     @pytest.mark.asyncio
     async def test_missing_repo_url_error(self):
         """Missing repo_url returns error."""
-        from src.tools.github.analyze_repository import handle
+        from src.handlers.github.analyze_repository import handle
         
         result = await handle({})
         assert len(result) == 1
@@ -309,7 +309,7 @@ class TestCreateTestPRIntegration:
     @pytest.mark.asyncio
     async def test_missing_required_fields(self):
         """Missing required fields return error."""
-        from src.tools.github.create_test_pr import handle
+        from src.handlers.github.create_test_pr import handle
         
         result = await handle({"repo_url": "https://github.com/test/repo"})
         assert len(result) == 1
@@ -318,7 +318,7 @@ class TestCreateTestPRIntegration:
     @pytest.mark.asyncio
     async def test_missing_token_error(self):
         """Missing token returns auth error."""
-        from src.tools.github.create_test_pr import handle
+        from src.handlers.github.create_test_pr import handle
         
         # Temporarily ensure no token
         import os
@@ -344,7 +344,7 @@ class TestCommentTestResultsIntegration:
     @pytest.mark.asyncio
     async def test_missing_pr_number(self):
         """Missing pr_number returns error."""
-        from src.tools.github.comment_test_results import handle
+        from src.handlers.github.comment_test_results import handle
         
         result = await handle({
             "repo_url": "https://github.com/test/repo",

@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Generic, TypeVar
 
-
 # Generic type for result data
 T = TypeVar("T")
 
@@ -32,31 +31,31 @@ class ErrorCode(str, Enum):
     # Input validation
     VALIDATION_ERROR = "validation_error"
     MISSING_INPUT = "missing_input"
-    
+
     # File operations
     FILE_NOT_FOUND = "file_not_found"
     PERMISSION_DENIED = "permission_denied"
     FILE_TOO_LARGE = "file_too_large"
     INVALID_EXTENSION = "invalid_extension"
-    
+
     # Code analysis
     SYNTAX_ERROR = "syntax_error"
     PARSE_ERROR = "parse_error"
-    
+
     # AI operations
     AI_UNAVAILABLE = "ai_unavailable"
     AI_ERROR = "ai_error"
-    
+
     # Execution
     EXECUTION_ERROR = "execution_error"
     TIMEOUT_ERROR = "timeout_error"
-    
+
     # GitHub operations
     GITHUB_AUTH_ERROR = "github_auth_error"
     GITHUB_REPO_NOT_FOUND = "github_repo_not_found"
     GITHUB_CLONE_ERROR = "github_clone_error"
     GITHUB_API_ERROR = "github_api_error"
-    
+
     # General
     INTERNAL_ERROR = "internal_error"
 
@@ -76,7 +75,7 @@ class ServiceError:
     code: ErrorCode
     message: str
     details: dict | None = None
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         result = {
@@ -114,7 +113,7 @@ class ServiceResult(Generic[T]):
     success: bool
     data: T | None = None
     error: ServiceError | None = None
-    
+
     @classmethod
     def ok(cls, data: T) -> ServiceResult[T]:
         """
@@ -127,7 +126,7 @@ class ServiceResult(Generic[T]):
             ServiceResult with success=True and data set
         """
         return cls(success=True, data=data, error=None)
-    
+
     @classmethod
     def fail(
         cls,
@@ -151,7 +150,7 @@ class ServiceResult(Generic[T]):
             data=None,
             error=ServiceError(code=code, message=message, details=details)
         )
-    
+
     def map(self, func) -> ServiceResult:
         """
         Transform the data if successful.
@@ -165,7 +164,7 @@ class ServiceResult(Generic[T]):
         if self.success and self.data is not None:
             return ServiceResult.ok(func(self.data))
         return self
-    
+
     def unwrap(self) -> T:
         """
         Get the data, raising if failed.
@@ -180,7 +179,7 @@ class ServiceResult(Generic[T]):
             error_msg = self.error.message if self.error else "Unknown error"
             raise ValueError(f"Cannot unwrap failed result: {error_msg}")
         return self.data
-    
+
     def unwrap_or(self, default: T) -> T:
         """
         Get the data or a default value.

@@ -11,11 +11,10 @@ Returns the existing AnalysisResult model - no duplication.
 
 from __future__ import annotations
 
-from .base import ServiceResult, ErrorCode
-from .code_loader import CodeLoader, LoadedCode
-
 # Import existing domain models
-from ..tools.core.analyzer import analyze_code, AnalysisResult
+from ..core.analyzer import AnalysisResult, analyze_code
+from .base import ErrorCode, ServiceResult
+from .code_loader import CodeLoader, LoadedCode
 
 
 class AnalysisService:
@@ -29,7 +28,7 @@ class AnalysisService:
     
     This class is stateless - inject dependencies via __init__.
     """
-    
+
     def __init__(self, code_loader: CodeLoader | None = None):
         """
         Initialize the analysis service.
@@ -38,7 +37,7 @@ class AnalysisService:
             code_loader: CodeLoader instance (creates default if None)
         """
         self._loader = code_loader or CodeLoader()
-    
+
     def analyze(
         self,
         code: str | None = None,
@@ -62,28 +61,28 @@ class AnalysisService:
         """
         # Step 1: Load code
         load_result = self._loader.load(code=code, file_path=file_path)
-        
+
         if not load_result.success:
             return ServiceResult.fail(
                 load_result.error.code,
                 load_result.error.message,
                 load_result.error.details
             )
-        
+
         loaded = load_result.data
-        
+
         # Step 2: Run analysis
         analysis = analyze_code(loaded.content)
-        
+
         # Step 3: Check for analysis errors
         if not analysis.valid:
             return ServiceResult.fail(
                 ErrorCode.SYNTAX_ERROR,
                 analysis.error or "Analysis failed"
             )
-        
+
         return ServiceResult.ok(analysis)
-    
+
     def analyze_with_metadata(
         self,
         code: str | None = None,
@@ -104,23 +103,23 @@ class AnalysisService:
         """
         # Step 1: Load code
         load_result = self._loader.load(code=code, file_path=file_path)
-        
+
         if not load_result.success:
             return ServiceResult.fail(
                 load_result.error.code,
                 load_result.error.message,
                 load_result.error.details
             )
-        
+
         loaded = load_result.data
-        
+
         # Step 2: Run analysis
         analysis = analyze_code(loaded.content)
-        
+
         if not analysis.valid:
             return ServiceResult.fail(
                 ErrorCode.SYNTAX_ERROR,
                 analysis.error or "Analysis failed"
             )
-        
+
         return ServiceResult.ok((analysis, loaded))

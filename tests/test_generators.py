@@ -1,9 +1,9 @@
 """Tests for the test generator."""
 
 import pytest
-from src.tools.core.analyzer import analyze_code
-from src.tools.core.generators import generate_tests, TemplateGenerator
-from src.tools.core.generators.base import GeneratedTestCase, GeneratedTest
+from src.core.analyzer import analyze_code
+from src.core.generators import generate_tests, TemplateGenerator
+from src.core.generators.base import GeneratedTestCase, GeneratedTest
 
 
 class TestTemplateGenerator:
@@ -181,7 +181,7 @@ class TestEvidenceExtractors:
 
     def test_doctest_extractor(self):
         """Test doctest extraction."""
-        from src.tools.core.generators.evidence.doctest_extractor import extract_doctests
+        from src.core.generators.extractors.doctest_extractor import extract_doctests
         
         docstring = '''
         Add two numbers.
@@ -199,7 +199,7 @@ class TestEvidenceExtractors:
 
     def test_type_assertions(self):
         """Test type assertion generation."""
-        from src.tools.core.generators.evidence.type_assertions import generate_type_assertions
+        from src.core.generators.extractors.type_assertions import generate_type_assertions
         
         assertions = generate_type_assertions("int")
         assert "assert isinstance(result, int)" in assertions
@@ -209,7 +209,7 @@ class TestEvidenceExtractors:
 
     def test_exception_detector(self):
         """Test exception detection."""
-        from src.tools.core.generators.evidence.exception_detector import detect_exceptions
+        from src.core.generators.extractors.exception_detector import detect_exceptions
         
         code = """
 def divide(a, b):
@@ -224,7 +224,7 @@ def divide(a, b):
 
     def test_boundary_values(self):
         """Test boundary value generation."""
-        from src.tools.core.generators.evidence.boundary_values import generate_boundary_values, get_default_value
+        from src.core.generators.extractors.boundary_values import generate_boundary_values, get_default_value
         
         # Test default values
         assert get_default_value("int") == "0"

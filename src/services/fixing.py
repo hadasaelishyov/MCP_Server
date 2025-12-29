@@ -10,10 +10,9 @@ Returns the existing FixResult model - no duplication.
 
 from __future__ import annotations
 
-from .base import ServiceResult, ErrorCode
-
 # Import existing domain models and functions
-from ..tools.core.fixer import fix_code, FixResult
+from ..core.fixer import FixResult, fix_code
+from .base import ErrorCode, ServiceResult
 
 
 class FixingService:
@@ -27,7 +26,7 @@ class FixingService:
     
     This class is stateless - no dependencies needed.
     """
-    
+
     def fix(
         self,
         source_code: str,
@@ -62,7 +61,7 @@ class FixingService:
         validation_error = self._validate_inputs(source_code, test_code)
         if validation_error:
             return validation_error
-        
+
         # Step 2: Run fixer
         try:
             fix_result = fix_code(
@@ -77,15 +76,15 @@ class FixingService:
                 ErrorCode.EXECUTION_ERROR,
                 f"Fix operation failed: {e}"
             )
-        
+
         # Note: Even if fix_result.success is False, the service call succeeded.
         # The FixResult itself contains the error information.
         # This allows handlers to distinguish between:
         # - Service failures (network, validation, etc.)
         # - Fix failures (couldn't find a fix)
-        
+
         return ServiceResult.ok(fix_result)
-    
+
     def fix_and_get_code(
         self,
         source_code: str,
@@ -117,30 +116,30 @@ class FixingService:
             verify=verify,
             api_key=api_key
         )
-        
+
         if not result.success:
             return ServiceResult.fail(
                 result.error.code,
                 result.error.message,
                 result.error.details
             )
-        
+
         fix_result = result.data
-        
+
         if not fix_result.success:
             return ServiceResult.fail(
                 ErrorCode.EXECUTION_ERROR,
                 fix_result.error or "Fix failed"
             )
-        
+
         if not fix_result.fixed_code:
             return ServiceResult.fail(
                 ErrorCode.EXECUTION_ERROR,
                 "No fixed code generated"
             )
-        
+
         return ServiceResult.ok(fix_result.fixed_code)
-    
+
     def _validate_inputs(
         self,
         source_code: str,
@@ -161,11 +160,11 @@ class FixingService:
                 ErrorCode.MISSING_INPUT,
                 "'source_code' is required and cannot be empty"
             )
-        
+
         if not test_code or not test_code.strip():
             return ServiceResult.fail(
                 ErrorCode.MISSING_INPUT,
                 "'test_code' is required and cannot be empty"
             )
-        
+
         return None

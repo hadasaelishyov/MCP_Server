@@ -26,10 +26,12 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent
 
-# Import tools and handlers from both modules
-from .tools.core import TOOLS as CORE_TOOLS, HANDLERS as CORE_HANDLERS
-from .tools.github import TOOLS as GITHUB_TOOLS, HANDLERS as GITHUB_HANDLERS
+from .handlers.core import HANDLERS as CORE_HANDLERS
 
+# Import tools and handlers from both modules
+from .handlers.core import TOOLS as CORE_TOOLS
+from .handlers.github import HANDLERS as GITHUB_HANDLERS
+from .handlers.github import TOOLS as GITHUB_TOOLS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,12 +66,12 @@ async def list_tools():
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     """Route tool calls to appropriate handlers."""
     logger.info(f"Tool called: {name}")
-    
+
     handler = ALL_HANDLERS.get(name)
-    
+
     if handler:
         return await handler(arguments)
-    
+
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
 
@@ -81,7 +83,7 @@ async def run_server():
     """Run the MCP server."""
     logger.info("Starting Pytest Generator MCP Server...")
     logger.info(f"Registered {len(ALL_TOOLS)} tools: {[t.name for t in ALL_TOOLS]}")
-    
+
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,

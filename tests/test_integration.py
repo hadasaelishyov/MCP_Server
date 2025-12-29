@@ -5,9 +5,9 @@ These tests verify that all components work together correctly.
 """
 
 import pytest
-from src.tools.core.analyzer import analyze_code
-from src.tools.core.generators import generate_tests
-from src.tools.core.runner import run_tests
+from src.core.analyzer import analyze_code
+from src.core.generators import generate_tests
+from src.core.runner import run_tests
 
 
 class TestFullPipeline:

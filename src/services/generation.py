@@ -15,12 +15,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .base import ServiceResult, ErrorCode
-from .code_loader import CodeLoader
-from .analysis import AnalysisService
-
 # Import existing domain models and functions
-from ..tools.core.generators import generate_tests, generate_tests_with_ai, GeneratedTest
+from ..core.generators import GeneratedTest, generate_tests, generate_tests_with_ai
+from .analysis import AnalysisService
+from .base import ErrorCode, ServiceResult
+from .code_loader import CodeLoader
 
 
 @dataclass(frozen=True)
@@ -66,7 +65,7 @@ class GenerationService:
     
     This class is stateless - inject dependencies via __init__.
     """
-    
+
     def __init__(
         self,
         code_loader: CodeLoader | None = None,
@@ -82,7 +81,7 @@ class GenerationService:
         self._loader = code_loader or CodeLoader()
         # Share the loader with analysis service for consistency
         self._analyzer = analysis_service or AnalysisService(self._loader)
-    
+
     def generate(
         self,
         code: str | None = None,
@@ -117,16 +116,16 @@ class GenerationService:
             code=code,
             file_path=file_path
         )
-        
+
         if not analyze_result.success:
             return ServiceResult.fail(
                 analyze_result.error.code,
                 f"Cannot generate tests: {analyze_result.error.message}",
                 analyze_result.error.details
             )
-        
+
         analysis, loaded = analyze_result.data
-        
+
         # Step 2: Generate tests
         if use_ai:
             tests = generate_tests_with_ai(
@@ -145,7 +144,7 @@ class GenerationService:
                 include_edge_cases=include_edge_cases
             )
             mode = "Template"
-        
+
         # Step 3: Optionally save to file
         saved_to = None
         if output_path:
@@ -157,7 +156,7 @@ class GenerationService:
                 tests.warnings.append(
                     f"Could not save to file: {save_result.error.message}"
                 )
-        
+
         # Step 4: Build result
         metadata = GenerationMetadata(
             mode=mode,
@@ -165,12 +164,12 @@ class GenerationService:
             class_count=len(analysis.classes),
             saved_to=saved_to
         )
-        
+
         return ServiceResult.ok(GenerationResult(
             tests=tests,
             metadata=metadata
         ))
-    
+
     def generate_code_only(
         self,
         code: str | None = None,
@@ -202,16 +201,16 @@ class GenerationService:
             api_key=api_key,
             output_path=None
         )
-        
+
         if not result.success:
             return ServiceResult.fail(
                 result.error.code,
                 result.error.message,
                 result.error.details
             )
-        
+
         return ServiceResult.ok(result.data.tests.to_code())
-    
+
     def _save_to_file(self, content: str, path: str) -> ServiceResult[str]:
         """
         Save content to a file.

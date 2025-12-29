@@ -13,10 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from .base import ServiceResult, ErrorCode
-
 # Import constants from the project
-from ..constants import MAX_CODE_SIZE, ALLOWED_EXTENSIONS
+from ..constants import ALLOWED_EXTENSIONS, MAX_CODE_SIZE
+from .base import ErrorCode, ServiceResult
 
 
 @dataclass(frozen=True)
@@ -49,7 +48,7 @@ class CodeLoader:
     This class is stateless - all configuration is passed to __init__
     and all state is passed to methods.
     """
-    
+
     def __init__(
         self,
         max_size: int = MAX_CODE_SIZE,
@@ -64,7 +63,7 @@ class CodeLoader:
         """
         self._max_size = max_size
         self._allowed_extensions = allowed_extensions
-    
+
     def load(
         self,
         code: str | None = None,
@@ -95,7 +94,7 @@ class CodeLoader:
                 ErrorCode.MISSING_INPUT,
                 "Please provide either 'file_path' or 'code'"
             )
-    
+
     def _load_from_file(
         self,
         file_path: str,
@@ -113,7 +112,7 @@ class CodeLoader:
         """
         path = Path(file_path)
         module_name = self._extract_module_name(file_path)
-        
+
         # Validate extension
         if path.suffix not in self._allowed_extensions:
             return ServiceResult.fail(
@@ -124,7 +123,7 @@ class CodeLoader:
                     "allowed": list(self._allowed_extensions)
                 }
             )
-        
+
         # Check file exists
         if not path.exists():
             if fallback_code is not None:
@@ -133,14 +132,14 @@ class CodeLoader:
                 ErrorCode.FILE_NOT_FOUND,
                 f"File not found: {file_path}"
             )
-        
+
         # Check it's a file, not directory
         if not path.is_file():
             return ServiceResult.fail(
                 ErrorCode.VALIDATION_ERROR,
                 f"Path is not a file: {file_path}"
             )
-        
+
         # Try to read file
         try:
             content = path.read_text(encoding="utf-8")
@@ -158,7 +157,7 @@ class CodeLoader:
                 ErrorCode.INTERNAL_ERROR,
                 f"Error reading file: {e}"
             )
-        
+
         # Validate size
         if len(content) > self._max_size:
             return ServiceResult.fail(
@@ -166,13 +165,13 @@ class CodeLoader:
                 f"File too large: {len(content):,} bytes (max: {self._max_size:,})",
                 details={"size": len(content), "max_size": self._max_size}
             )
-        
+
         return ServiceResult.ok(LoadedCode(
             content=content,
             module_name=module_name,
             source_path=file_path
         ))
-    
+
     def _load_from_string(
         self,
         code: str,
@@ -195,13 +194,13 @@ class CodeLoader:
                 f"Code too large: {len(code):,} bytes (max: {self._max_size:,})",
                 details={"size": len(code), "max_size": self._max_size}
             )
-        
+
         return ServiceResult.ok(LoadedCode(
             content=code,
             module_name=module_name,
             source_path=None
         ))
-    
+
     def _extract_module_name(self, file_path: str) -> str:
         """
         Extract module name from file path.

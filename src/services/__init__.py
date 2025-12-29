@@ -64,10 +64,12 @@ Architecture:
 """
 
 # Base utilities
+# Services
+from .analysis import AnalysisService
 from .base import (
-    ServiceResult,
-    ServiceError,
     ErrorCode,
+    ServiceError,
+    ServiceResult,
 )
 
 # Code loading
@@ -75,14 +77,10 @@ from .code_loader import (
     CodeLoader,
     LoadedCode,
 )
-
-# Services
-from .analysis import AnalysisService
-from .generation import GenerationService, GenerationResult, GenerationMetadata
 from .execution import ExecutionService
 from .fixing import FixingService
-from .github import GitHubService, CloneResult, PRInfo, CommentInfo
-
+from .generation import GenerationMetadata, GenerationResult, GenerationService
+from .github import CloneResult, CommentInfo, GitHubService, PRInfo
 
 __all__ = [
     # Base

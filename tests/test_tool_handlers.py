@@ -11,19 +11,19 @@ Tests the new tool handler files:
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from src.tools.core.analyze_code import (
+from src.handlers.core.analyze_code import (
     TOOL_DEFINITION as ANALYZE_TOOL,
     handle as handle_analyze,
 )
-from src.tools.core.generate_tests import (
+from src.handlers.core.generate_tests import (
     TOOL_DEFINITION as GENERATE_TOOL,
     handle as handle_generate,
 )
-from src.tools.core.run_tests import (
+from src.handlers.core.run_tests import (
     TOOL_DEFINITION as RUN_TOOL,
     handle as handle_run,
 )
-from src.tools.core.fix_code import (
+from src.handlers.core.fix_code import (
     TOOL_DEFINITION as FIX_TOOL,
     handle as handle_fix,
 )
@@ -193,7 +193,7 @@ class TestExports:
     
     def test_core_exports_tools(self):
         """core module exports TOOLS list."""
-        from src.tools.core import TOOLS
+        from src.handlers.core import TOOLS
         
         assert isinstance(TOOLS, list)
         assert len(TOOLS) == 4
@@ -206,7 +206,7 @@ class TestExports:
     
     def test_core_exports_handlers(self):
         """core module exports HANDLERS dict."""
-        from src.tools.core import HANDLERS
+        from src.handlers.core import HANDLERS
         
         assert isinstance(HANDLERS, dict)
         assert len(HANDLERS) == 4
@@ -218,7 +218,7 @@ class TestExports:
     
     def test_github_exports_tools(self):
         """github module exports TOOLS list."""
-        from src.tools.github import TOOLS
+        from src.handlers.github import TOOLS
         
         assert isinstance(TOOLS, list)
         assert len(TOOLS) == 3
@@ -230,7 +230,7 @@ class TestExports:
     
     def test_github_exports_handlers(self):
         """github module exports HANDLERS dict."""
-        from src.tools.github import HANDLERS
+        from src.handlers.github import HANDLERS
         
         assert isinstance(HANDLERS, dict)
         assert len(HANDLERS) == 3

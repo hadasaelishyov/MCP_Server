@@ -10,10 +10,9 @@ Returns the existing RunResult model - no duplication.
 
 from __future__ import annotations
 
-from .base import ServiceResult, ErrorCode
-
 # Import existing domain models and functions
-from ..tools.core.runner import run_tests, RunResult
+from ..core.runner import RunResult, run_tests
+from .base import ErrorCode, ServiceResult
 
 
 class ExecutionService:
@@ -27,7 +26,7 @@ class ExecutionService:
     
     This class is stateless - no dependencies needed.
     """
-    
+
     def run(
         self,
         source_code: str,
@@ -56,7 +55,7 @@ class ExecutionService:
         validation_error = self._validate_inputs(source_code, test_code)
         if validation_error:
             return validation_error
-        
+
         # Step 2: Run tests
         try:
             run_result = run_tests(source_code, test_code)
@@ -65,16 +64,16 @@ class ExecutionService:
                 ErrorCode.EXECUTION_ERROR,
                 f"Test execution failed: {e}"
             )
-        
+
         # Step 3: Check for runner-level errors
         if run_result.error_message and run_result.total == 0:
             return ServiceResult.fail(
                 ErrorCode.EXECUTION_ERROR,
                 run_result.error_message
             )
-        
+
         return ServiceResult.ok(run_result)
-    
+
     def run_and_summarize(
         self,
         source_code: str,
@@ -93,16 +92,16 @@ class ExecutionService:
             ServiceResult containing summary dict
         """
         result = self.run(source_code, test_code)
-        
+
         if not result.success:
             return ServiceResult.fail(
                 result.error.code,
                 result.error.message,
                 result.error.details
             )
-        
+
         return ServiceResult.ok(result.data.to_dict())
-    
+
     def _validate_inputs(
         self,
         source_code: str,
@@ -123,11 +122,11 @@ class ExecutionService:
                 ErrorCode.MISSING_INPUT,
                 "'source_code' is required and cannot be empty"
             )
-        
+
         if not test_code or not test_code.strip():
             return ServiceResult.fail(
                 ErrorCode.MISSING_INPUT,
                 "'test_code' is required and cannot be empty"
             )
-        
+
         return None
