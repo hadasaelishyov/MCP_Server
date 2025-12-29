@@ -15,6 +15,7 @@ from openai import OpenAI
 
 from .base import GeneratedTestCase
 
+from ..constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
 
 @dataclass
 class EnhancementResult:
@@ -35,7 +36,7 @@ class AIEnhancer:
     - Exception tests → correct trigger conditions
     """
     
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model: str = DEFAULT_AI_MODEL):
         """
         Initialize the AI enhancer.
         
@@ -88,8 +89,8 @@ class AIEnhancer:
                     {"role": "system", "content": self._get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2,  # Low temperature for consistent output
-                max_tokens=2000
+                temperature=AI_TEMPERATURE,
+                max_tokens=AI_MAX_TOKENS
             )
             
             # Parse response

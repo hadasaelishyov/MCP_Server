@@ -16,6 +16,7 @@ from .models import (
     VerificationResult,
     ConfidenceLevel,
 )
+from ..constants import DEFAULT_AI_MODEL, AI_TEMPERATURE, AI_MAX_TOKENS
 
 
 class CodeFixer:
@@ -26,7 +27,7 @@ class CodeFixer:
     Optionally verifies fixes by re-running tests.
     """
     
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model: str = DEFAULT_AI_MODEL):
         """
         Initialize the code fixer.
         
@@ -123,8 +124,9 @@ class CodeFixer:
                     {"role": "system", "content": self._get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.2,  # Low temperature for consistent fixes
-                max_tokens=3000
+                temperature=AI_TEMPERATURE,
+                max_tokens=AI_MAX_TOKENS
+                
             )
             
             ai_output = response.choices[0].message.content

@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 from .models import TestResult, CoverageResult, RunResult
-
+from ..constants import STDLIB_MODULES, TEST_TIMEOUT_SECONDS
 
 class TestRunner:
     """
@@ -57,7 +57,7 @@ class TestRunner:
                 if match:
                     module = match.group(1)
                     # Skip standard library imports
-                    if module not in ('pytest', 'unittest', 'typing', 'collections', 'os', 'sys'):
+                    if module not in STDLIB_MODULES:
                         return module
         
         return "module"  # default fallback
@@ -135,7 +135,7 @@ class TestRunner:
                 cwd=str(temp_path),
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=TEST_TIMEOUT_SECONDS,
                 stdin=subprocess.DEVNULL,
                 env={**os.environ, "PYTHONPATH": str(temp_path)}
             )

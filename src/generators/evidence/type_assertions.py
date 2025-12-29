@@ -14,7 +14,7 @@ Principle: Better weak than wrong - never generate invalid isinstance checks.
 """
 
 from dataclasses import dataclass
-
+from ...constants import SIMPLE_TYPES, ISINSTANCE_MAPPING
 
 @dataclass
 class ParsedType:
@@ -23,26 +23,6 @@ class ParsedType:
     allows_none: bool      # Whether None is allowed
     is_valid: bool         # Whether we can generate safe isinstance checks
 
-
-# Types that can be safely used with isinstance
-SIMPLE_TYPES = {
-    "int", "str", "float", "bool", "list", "dict", 
-    "set", "tuple", "bytes", "bytearray"
-}
-
-# Special isinstance mappings (float should accept int)
-ISINSTANCE_MAPPING = {
-    "int": "int",
-    "str": "str",
-    "float": "(int, float)",  # float accepts int
-    "bool": "bool",
-    "list": "list",
-    "dict": "dict",
-    "set": "set",
-    "tuple": "tuple",
-    "bytes": "bytes",
-    "bytearray": "bytearray",
-}
 
 
 def parse_type_hint(type_str: str) -> ParsedType:
