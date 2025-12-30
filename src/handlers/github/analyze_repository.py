@@ -12,59 +12,10 @@ Uses GitHubService for cloning, AnalysisService for analysis.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 from mcp.types import TextContent, Tool
 
-from ...services import AnalysisService, GitHubService, ServiceResult
-
-# =============================================================================
-# Data Models
-# =============================================================================
-
-@dataclass
-class FileAnalysis:
-    """Analysis result for a single file."""
-    relative_path: str
-    functions_count: int
-    classes_count: int
-    is_test_file: bool
-    complexity: float
-    type_hint_coverage: float
-    warnings: list[str] = field(default_factory=list)
-
-    @property
-    def needs_tests(self) -> bool:
-        """Check if this file needs tests."""
-        return (
-            not self.is_test_file
-            and (self.functions_count > 0 or self.classes_count > 0)
-        )
-
-
-@dataclass
-class RepositoryAnalysis:
-    """Complete analysis of a repository."""
-    repo_url: str
-    branch: str
-    files: list[FileAnalysis]
-
-    @property
-    def total_files(self) -> int:
-        return len(self.files)
-
-    @property
-    def files_needing_tests(self) -> int:
-        return sum(1 for f in self.files if f.needs_tests)
-
-    @property
-    def total_functions(self) -> int:
-        return sum(f.functions_count for f in self.files)
-
-    @property
-    def total_classes(self) -> int:
-        return sum(f.classes_count for f in self.files)
-
+from ...core.repository.models import RepositoryAnalysis
+from ...services import RepositoryAnalysisService
 
 # =============================================================================
 # Tool Definition
@@ -124,7 +75,8 @@ async def handle(arguments: dict) -> list[TextContent]:
         )]
 
     # Analyze repository
-    result = analyze_repository(repo_url, branch, path_filter)
+    service = RepositoryAnalysisService()
+    result = service.analyze_repository(repo_url, branch, path_filter)
 
     if not result.success:
         return [TextContent(
@@ -137,112 +89,6 @@ async def handle(arguments: dict) -> list[TextContent]:
         type="text",
         text=format_analysis(result.data)
     )]
-
-
-# =============================================================================
-# Business Logic
-# =============================================================================
-
-def analyze_repository(
-    repo_url: str,
-    branch: str = "main",
-    path_filter: str | None = None
-) -> ServiceResult[RepositoryAnalysis]:
-    """
-    Clone and analyze a GitHub repository.
-    
-    Args:
-        repo_url: GitHub repository URL
-        branch: Branch to analyze
-        path_filter: Optional glob pattern to filter files
-        
-    Returns:
-        ServiceResult with RepositoryAnalysis
-    """
-    github_service = GitHubService()
-    analysis_service = AnalysisService()
-
-    # Clone repository
-    clone_result = github_service.clone_repository(repo_url, branch)
-
-    if not clone_result.success:
-        return ServiceResult.fail(
-            clone_result.error.code,
-            clone_result.error.message
-        )
-
-    clone_info = clone_result.data
-    repo_path = clone_info.path
-    actual_branch = clone_info.branch
-
-    try:
-        # Find Python files
-        if path_filter:
-            py_files = list(repo_path.glob(path_filter))
-        else:
-            py_files = list(repo_path.rglob("*.py"))
-
-        # Filter out hidden directories, __pycache__, venv, etc.
-        py_files = [
-            f for f in py_files
-            if not any(
-                part.startswith('.') or
-                part in ('__pycache__', 'venv', '.venv', 'node_modules', 'dist', 'build')
-                for part in f.parts
-            )
-        ]
-
-        # Analyze each file
-        files_analyzed: list[FileAnalysis] = []
-
-        for py_file in py_files:
-            relative_path = str(py_file.relative_to(repo_path))
-
-            # Check if it's a test file
-            is_test_file = (
-                "test" in py_file.name.lower() or
-                py_file.name.startswith("test_") or
-                "/tests/" in relative_path or
-                "\\tests\\" in relative_path
-            )
-
-            # Analyze the file
-            result = analysis_service.analyze(file_path=str(py_file))
-
-            if result.success:
-                analysis = result.data
-                file_analysis = FileAnalysis(
-                    relative_path=relative_path,
-                    functions_count=analysis.total_functions,
-                    classes_count=analysis.total_classes,
-                    is_test_file=is_test_file,
-                    complexity=analysis.average_complexity,
-                    type_hint_coverage=analysis.type_hint_coverage,
-                    warnings=analysis.warnings[:3]  # Limit warnings
-                )
-            else:
-                # File had errors, still include it with zero counts
-                file_analysis = FileAnalysis(
-                    relative_path=relative_path,
-                    functions_count=0,
-                    classes_count=0,
-                    is_test_file=is_test_file,
-                    complexity=0,
-                    type_hint_coverage=0,
-                    warnings=[f"Parse error: {result.error.message}"]
-                )
-
-            files_analyzed.append(file_analysis)
-
-        return ServiceResult.ok(RepositoryAnalysis(
-            repo_url=repo_url,
-            branch=actual_branch,
-            files=files_analyzed
-        ))
-
-    finally:
-        # Always cleanup
-        github_service.cleanup_clone(repo_path)
 
 
 # =============================================================================

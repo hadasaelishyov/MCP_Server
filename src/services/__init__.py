@@ -81,6 +81,7 @@ from .execution import ExecutionService
 from .fixing import FixingService
 from .generation import GenerationMetadata, GenerationResult, GenerationService
 from .github import CloneResult, CommentInfo, GitHubService, PRInfo
+from .repository_analysis import RepositoryAnalysisService
 
 __all__ = [
     # Base
@@ -102,6 +103,8 @@ __all__ = [
     "CloneResult",
     "PRInfo",
     "CommentInfo",
+    "RepositoryAnalysisService",
+
 ]
 
 

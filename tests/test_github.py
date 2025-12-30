@@ -14,11 +14,9 @@ from pathlib import Path
 
 from src.services.github import GitHubService, CloneResult, PRInfo, CommentInfo
 from src.services.base import ErrorCode
-from src.handlers.github.analyze_repository import (
-    FileAnalysis,
-    RepositoryAnalysis,
-    format_analysis,
-)
+from src.core.repository.models import FileAnalysis, RepositoryAnalysis
+from src.handlers.github.analyze_repository import format_analysis
+
 from src.handlers.github.create_test_pr import generate_pr_description
 from src.handlers.github.comment_test_results import format_test_comment
 
@@ -301,6 +299,52 @@ class TestAnalyzeRepositoryIntegration:
         assert len(result) == 1
         assert "Error" in result[0].text
         assert "repo_url" in result[0].text
+class TestGetRepoFileIntegration:
+    """Integration tests for get_repo_file tool."""
+
+    @pytest.mark.asyncio
+    async def test_missing_repo_url_error(self):
+        """Missing repo_url returns error."""
+        from src.handlers.github.get_repo_file import handle
+
+        result = await handle({"file_path": "src/app.py"})
+        assert len(result) == 1
+        assert "repo_url" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_missing_file_path_error(self):
+        """Missing file_path returns error."""
+        from src.handlers.github.get_repo_file import handle
+
+        result = await handle({"repo_url": "https://github.com/test/repo"})
+        assert len(result) == 1
+        assert "file_path" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_success_returns_raw_code(self):
+        """Successful call returns raw file content."""
+        from src.handlers.github.get_repo_file import handle
+        from src.services.base import ServiceResult
+
+        with patch("src.handlers.github.get_repo_file.GitHubService") as mock_cls:
+            mock_service = mock_cls.return_value
+            mock_service.get_file_content.return_value = ServiceResult.ok("print('hi')\n")
+
+            result = await handle({
+                "repo_url": "https://github.com/test/repo",
+                "file_path": "src/app.py",
+                "branch": "main",
+                "format": "raw",
+            })
+
+            assert len(result) == 1
+            assert result[0].text == "print('hi')\n"
+
+            mock_service.get_file_content.assert_called_once_with(
+                repo_url="https://github.com/test/repo",
+                file_path="src/app.py",
+                branch="main",
+            )
 
 
 class TestCreateTestPRIntegration:
