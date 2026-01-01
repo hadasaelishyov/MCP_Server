@@ -1,14 +1,4 @@
-"""
-Analyze Repository Tool - Clone and analyze a GitHub repository.
-
-This tool:
-1. Clones the repository to a temp directory
-2. Finds all Python files
-3. Analyzes each file using AnalysisService
-4. Returns a summary of what needs tests
-
-Uses GitHubService for cloning, AnalysisService for analysis.
-"""
+"""MCP handler for analyze_repository (delegates to RepositoryAnalysisService)."""
 
 from __future__ import annotations
 
@@ -54,15 +44,8 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle analyze_repository tool call.
-    
-    Args:
-        arguments: Tool arguments (repo_url, branch, path_filter)
-        
-    Returns:
-        List with single TextContent containing analysis results
-    """
+    """Analyze a GitHub repository and return a formatted summary."""
+
     repo_url = arguments.get("repo_url", "")
     branch = arguments.get("branch", "main")
     path_filter = arguments.get("path_filter")

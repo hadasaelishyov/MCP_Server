@@ -1,13 +1,8 @@
-"""
-Analysis Service - Business logic for code analysis.
+"""Analysis service.
 
-Wraps the analyzer module with:
-- Input validation via CodeLoader
-- Structured error handling via ServiceResult
-- Clean separation from MCP presentation
-
-Returns the existing AnalysisResult model - no duplication.
+Loads code via CodeLoader and delegates analysis to the core analyzer.
 """
+
 
 from __future__ import annotations
 
@@ -18,24 +13,9 @@ from .code_loader import CodeLoader, LoadedCode
 
 
 class AnalysisService:
-    """
-    Service for analyzing Python code.
-    
-    Orchestrates:
-    1. Code loading (from file or string)
-    2. Analysis via analyzer module
-    3. Error handling and result wrapping
-    
-    This class is stateless - inject dependencies via __init__.
-    """
+    """Analyze Python source code (load → analyze) and return AnalysisResult in ServiceResult."""
 
     def __init__(self, code_loader: CodeLoader | None = None):
-        """
-        Initialize the analysis service.
-        
-        Args:
-            code_loader: CodeLoader instance (creates default if None)
-        """
         self._loader = code_loader or CodeLoader()
 
     def analyze(
@@ -43,22 +23,8 @@ class AnalysisService:
         code: str | None = None,
         file_path: str | None = None
     ) -> ServiceResult[AnalysisResult]:
-        """
-        Analyze Python code.
-        
-        Args:
-            code: Direct code string
-            file_path: Path to Python file
-            
-        Returns:
-            ServiceResult containing AnalysisResult on success
-            
-        Example:
-            service = AnalysisService()
-            result = service.analyze(code="def add(a, b): return a + b")
-            if result.success:
-                print(f"Found {len(result.data.functions)} functions")
-        """
+        """Analyze code provided via `code` or `file_path`."""
+
         # Step 1: Load code
         load_result = self._loader.load(code=code, file_path=file_path)
 
@@ -88,19 +54,8 @@ class AnalysisService:
         code: str | None = None,
         file_path: str | None = None
     ) -> ServiceResult[tuple[AnalysisResult, LoadedCode]]:
-        """
-        Analyze code and return both analysis and load metadata.
-        
-        Useful when you need the module name or source path
-        for subsequent operations.
-        
-        Args:
-            code: Direct code string
-            file_path: Path to Python file
-            
-        Returns:
-            ServiceResult containing (AnalysisResult, LoadedCode) tuple
-        """
+        """Analyze code and also return load metadata (e.g., module name / source path)."""
+
         # Step 1: Load code
         load_result = self._loader.load(code=code, file_path=file_path)
 

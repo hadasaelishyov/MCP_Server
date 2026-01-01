@@ -1,12 +1,4 @@
-"""
-Comment Test Results Tool - Post test results as a comment on a GitHub PR.
-
-This tool:
-1. Formats test results as markdown
-2. Posts the comment on the specified PR
-
-Uses GitHubService for posting comments.
-"""
+"""MCP handler for comment_test_results (delegates to GitHubService)."""
 
 from __future__ import annotations
 
@@ -54,15 +46,8 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle comment_test_results tool call.
-    
-    Args:
-        arguments: Tool arguments
-        
-    Returns:
-        List with single TextContent containing result
-    """
+    """Post formatted test results as a PR comment and return a confirmation message."""
+
     repo_url = arguments.get("repo_url", "")
     pr_number = arguments.get("pr_number", 0)
     test_results = arguments.get("test_results", "")

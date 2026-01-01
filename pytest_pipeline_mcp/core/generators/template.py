@@ -13,20 +13,11 @@ from .extractors.type_assertions import generate_type_assertions
 
 
 class TemplateGenerator(TestGeneratorBase):
-    """
-    Template-based test generator.
-    
-    Layer 1: Basic smoke tests (always generated)
-    Layer 2: Evidence-based enrichment (when signals available)
-    """
+    """Generate pytest cases from analysis signals (doctests, hints, exceptions, boundaries)."""
 
     def __init__(self, source_code: str = ""):
-        """
-        Initialize generator.
-        
-        Args:
-            source_code: Original source code (needed for exception detection)
-        """
+        """Create generator (source_code is used for exception detection)."""
+
         self.source_code = source_code
 
     def generate_for_function(
@@ -414,18 +405,7 @@ def generate_tests(
     module_name: str = "module",
     include_edge_cases: bool = True
 ) -> GeneratedTest:
-    """
-    Main entry point - generate tests from analysis result.
-    
-    Args:
-        analysis: Result from analyze_code()
-        source_code: Original source code
-        module_name: Name for imports
-        include_edge_cases: Whether to generate boundary tests
-        
-    Returns:
-        GeneratedTest with complete test code
-    """
+    """Generate a complete GeneratedTest from an AnalysisResult (template-based)."""
     generator = TemplateGenerator(source_code=source_code)
 
     test_cases = []
@@ -462,24 +442,8 @@ def generate_tests_with_ai(
     include_edge_cases: bool = True,
     api_key: str | None = None
 ) -> GeneratedTest:
-    """
-    Generate tests with optional AI enhancement.
-    
-    Pipeline:
-    1. Template generator creates basic tests (Layer 1+2)
-    2. AI enhancer improves assertions (Layer 3)
-    3. Fallback to template if AI fails
-    
-    Args:
-        analysis: Result from analyze_code()
-        source_code: Original source code
-        module_name: Name for imports
-        include_edge_cases: Whether to generate boundary tests
-        api_key: OpenAI API key (optional, uses env var if not provided)
-        
-    Returns:
-        GeneratedTest with complete test code
-    """
+    """Generate tests and optionally enhance them with AI (falls back to template on failure)."""
+
     from .ai import create_enhancer
 
     # Step 1: Generate template tests (always runs)

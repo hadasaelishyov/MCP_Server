@@ -1,7 +1,4 @@
-"""
-Base interface for test generators.
-Allows swapping between template and AI generators.
-"""
+"""Shared models and interfaces for test generation."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field

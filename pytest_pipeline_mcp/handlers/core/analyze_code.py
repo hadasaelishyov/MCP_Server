@@ -1,15 +1,4 @@
-"""
-Analyze Code Tool - Analyze Python code structure.
-
-This tool:
-1. Validates Python syntax
-2. Extracts functions, classes, methods, parameters
-3. Calculates cyclomatic complexity
-4. Reports type hint coverage
-5. Warns about missing docstrings and high complexity
-
-Uses AnalysisService for business logic.
-"""
+"""MCP handler for the analyze_code tool (delegates to AnalysisService)."""
 
 from __future__ import annotations
 
@@ -51,15 +40,7 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle analyze_code tool call.
-    
-    Args:
-        arguments: Tool arguments (file_path or code)
-        
-    Returns:
-        List with single TextContent containing analysis results as JSON
-    """
+    """Analyze code from 'code' or 'file_path' and return JSON results."""
     service = AnalysisService()
 
     result = service.analyze(

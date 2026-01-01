@@ -1,8 +1,4 @@
-"""
-Exception Detector - Find raise statements in function AST.
-
-Detects what exceptions a function can raise so we can test them.
-"""
+"""Detect raised exceptions in a function AST and generate pytest.raises snippets."""
 
 import ast
 import re
@@ -19,16 +15,8 @@ class DetectedException:
 
 
 def detect_exceptions(code: str, function_name: str) -> list[DetectedException]:
-    """
-    Detect exceptions raised by a function.
-    
-    Args:
-        code: Complete source code
-        function_name: Name of function to analyze
-        
-    Returns:
-        List of DetectedException objects
-    """
+    """Detect exceptions raised by the given function in the provided source."""
+
     try:
         tree = ast.parse(code)
     except SyntaxError:
@@ -94,24 +82,8 @@ def _parse_raise(node: ast.Raise) -> DetectedException | None:
 
 
 def escape_for_regex(message: str, max_length: int = 40) -> str:
-    """
-    Escape a message string for use in pytest.raises(match=...).
-    
-    Uses re.escape() to properly escape ALL regex special characters.
-    Truncates long messages to avoid overly specific matching.
-    
-    Args:
-        message: The exception message to escape
-        max_length: Maximum length before truncation (default: 40)
-        
-    Returns:
-        Escaped string safe for regex matching
-    
-    Examples:
-        "Expected (x, y)" -> "Expected\\ \\(x,\\ y\\)"
-        "Price must be >= 0" -> "Price\\ must\\ be\\ \\>=\\ 0"
-        "Use $100" -> "Use\\ \\$100"
-    """
+    """Escape an exception message for use in pytest.raises(match=...) (optionally truncating)."""
+
     # Escape all regex special characters
     escaped = re.escape(message)
 
@@ -123,21 +95,8 @@ def escape_for_regex(message: str, max_length: int = 40) -> str:
 
 
 def format_match_string(message: str) -> str:
-    """
-    Format an exception message as a pytest match parameter.
-    
-    Handles:
-    - Regex escaping for special characters
-    - Quotes inside the message
-    - Long messages (truncation)
-    - Empty messages
-    
-    Args:
-        message: The exception message
-        
-    Returns:
-        Formatted match string like 'match=r"..."' or 'match=r"..."'
-    """
+    """Format a safe pytest.raises(match=...) argument for the given exception message."""
+
     if not message:
         return ""
 
@@ -164,17 +123,8 @@ def generate_exception_test(
     exception: DetectedException,
     param_values: str = ""
 ) -> list[str]:
-    """
-    Generate test code for an exception.
-    
-    Args:
-        func_name: Function name
-        exception: Detected exception info
-        param_values: Pre-formatted parameter string like "0.0, 0.0"
-        
-    Returns:
-        List of test code lines
-    """
+    """Generate pytest.raises(...) lines for a detected exception."""
+
     # Build function call with params
     if param_values:
         func_call = f"{func_name}({param_values})"
@@ -195,18 +145,8 @@ def generate_exception_test(
 
 
 def get_safe_trigger_hint(exception: DetectedException) -> str | None:
-    """
-    Try to suggest inputs that might trigger the exception.
+    """Heuristic hint for inputs that might trigger the detected exception."""
     
-    Based on common patterns in exception messages.
-    This is a hint, not a guarantee.
-    
-    Args:
-        exception: The detected exception
-        
-    Returns:
-        Hint string or None if no pattern matched
-    """
     if not exception.message:
         return None
 

@@ -1,14 +1,4 @@
-"""
-Fix Code Tool - Automatically fix bugs in Python code based on failing tests.
-
-This tool:
-1. Analyzes test failures
-2. Identifies bugs in source code
-3. Generates minimal fixes using AI
-4. Verifies the fix by re-running tests
-
-Uses FixingService for business logic.
-"""
+"""MCP handler for fix_code (delegates to FixingService)."""
 
 from __future__ import annotations
 
@@ -61,15 +51,8 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle fix_code tool call.
+    """Fix code using provided tests (and optional output) and return the formatted result."""
     
-    Args:
-        arguments: Tool arguments
-        
-    Returns:
-        List with single TextContent containing fix results
-    """
     service = FixingService()
 
     result = service.fix(

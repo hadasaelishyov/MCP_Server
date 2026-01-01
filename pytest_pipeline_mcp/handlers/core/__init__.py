@@ -1,23 +1,4 @@
-"""
-Core Tools - MCP Tool Handlers
-
-This module exports only MCP-related items:
-- TOOLS: List of tool definitions
-- HANDLERS: Dict mapping tool names to handlers
-
-For business logic, import from src.core instead.
-
-Usage:
-    from src.tools.core import TOOLS, HANDLERS
-
-    # Register all tools
-    for tool in TOOLS:
-        print(tool.name)
-
-    # Call a handler
-    handler = HANDLERS.get("analyze_code")
-    result = await handler({"code": "def add(a, b): return a + b"})
-"""
+"""Registry for core MCP tool definitions and handlers."""
 
 # Tool definitions and handlers
 from .analyze_code import (

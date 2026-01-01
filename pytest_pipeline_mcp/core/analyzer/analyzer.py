@@ -1,6 +1,4 @@
-"""
-Code Analyzer - Main analysis engine that combines parsing and validation.
-"""
+"""Code Analyzer - Main analysis engine that combines parsing and validation."""
 
 from .models import AnalysisResult, FunctionInfo
 from .parser import extract_classes, extract_functions, parse_code
@@ -9,23 +7,8 @@ from .type_hint_checker import check_type_hints
 
 
 def analyze_code(code: str) -> AnalysisResult:
-    """
-    Analyze Python code completely.
+    """Analyze Python source and return an AnalysisResult (or a failure with error)."""
     
-    This is the main entry point that:
-    1. Validates syntax
-    2. Parses code structure
-    3. Extracts functions and classes
-    4. Checks type hints
-    5. Calculates complexity
-    6. Generates warnings
-    
-    Args:
-        code: Python source code as string
-        
-    Returns:
-        AnalysisResult with all analysis data
-    """
     if not code or not code.strip():
         return AnalysisResult(
             valid=False,
@@ -132,15 +115,8 @@ def _calculate_statistics(functions: list[FunctionInfo]) -> dict:
 
 
 def analyze_file(file_path: str) -> AnalysisResult:
-    """
-    Analyze a Python file.
-    
-    Args:
-        file_path: Path to Python file
-        
-    Returns:
-        AnalysisResult with all analysis data
-    """
+    """Load and analyze a Python file at the given path."""
+
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             code = f.read()

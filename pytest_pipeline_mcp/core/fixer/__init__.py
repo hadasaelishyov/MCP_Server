@@ -1,9 +1,4 @@
-"""
-Code Fixer - Automatically fix bugs based on test failures.
-
-This module analyzes test failures and uses AI to generate fixes
-for the source code, then verifies the fixes work.
-"""
+"""Code Fixer - Automatically fix bugs based on test failures.(AI-assisted bug fixing + verification)."""
 
 from .fixer import CodeFixer, create_fixer, fix_code
 from .models import (

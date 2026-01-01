@@ -35,7 +35,7 @@ A core design principle of this server is **tool composability**. Each tool's ou
 
 ```python
 # 1. Analyze the code
-analyze_code(file_path="src/calculator.pשy")
+analyze_code(file_path="src/calculator.py")
     → Returns: functions, classes, complexity, type coverage, warnings
 
 # 2. Generate tests (uses analysis internally)
@@ -103,7 +103,7 @@ This composability means an MCP-compatible agent can orchestrate the entire test
 
 ```bash
 git clone https://github.com/hadasaelishyov/pytest-pipeline-mcp.git
-cd pytest_pipeline_mcp
+cd pytest-pipeline-mcp
 uv sync
 uv run pytest-pipeline-mcp
 ```
@@ -202,7 +202,7 @@ This server executes Python code. Do not run untrusted code without sandboxing. 
 
 ```bash
 git clone https://github.com/hadasaelishyov/pytest-pipeline-mcp.git
-cd pytest_pipeline_mcp
+cd pytest-pipeline-mcp
 uv sync
 uv run pytest                   
 uv run ruff check pytest_pipeline_mcp/

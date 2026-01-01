@@ -1,21 +1,12 @@
 """
-Pytest Pipeline MCP Server
+MCP server entrypoint for pytest-pipeline.
 
-A Model Context Protocol server that generates pytest tests
-using static code analysis and AI enhancement.
-
-Architecture:
-------------
-This module is THIN. It only handles:
-1. MCP protocol setup
-2. Tool registration (imports from tools/)
-3. Request routing to handlers
-
-All business logic lives in:
-- tools/core/     → Core tools (analyze, generate, run, fix)
-- tools/github/   → GitHub integration tools
-- services/       → Shared business logic
+This module is intentionally thin:
+- sets up the MCP server
+- registers tools (from handlers)
+- routes tool calls to handlers
 """
+
 
 from __future__ import annotations
 
@@ -26,12 +17,12 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent
 
-from .handlers.core import HANDLERS as CORE_HANDLERS
 
 # Import tools and handlers from both modules
 from .handlers.core import TOOLS as CORE_TOOLS
-from .handlers.github import HANDLERS as GITHUB_HANDLERS
 from .handlers.github import TOOLS as GITHUB_TOOLS
+from .handlers.core import HANDLERS as CORE_HANDLERS
+from .handlers.github import HANDLERS as GITHUB_HANDLERS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

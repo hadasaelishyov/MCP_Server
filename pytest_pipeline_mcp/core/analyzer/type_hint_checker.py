@@ -1,6 +1,4 @@
-"""
-Type Hint Checker - Check if functions have type annotations.
-"""
+"""Type-hint coverage checker for Python functions."""
 
 import ast
 from dataclasses import dataclass, field
@@ -31,15 +29,8 @@ class TypeHintResult:
 
 
 def check_type_hints(code: str) -> TypeHintResult:
-    """
-    Check type hint coverage in Python code.
-    
-    Args:
-        code: Python source code as string
-        
-    Returns:
-        TypeHintResult with coverage details
-    """
+    """Compute per-function and overall type-hint coverage for the given source."""
+
     try:
         tree = ast.parse(code)
     except SyntaxError:

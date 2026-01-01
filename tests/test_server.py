@@ -1,4 +1,4 @@
-"""Tests for the pytest-generator-mcp server."""
+"""Tests for the pytest-pipeline-mcp server."""
 
 import pytest
 
@@ -14,4 +14,4 @@ class TestServerBasics:
     def test_server_creation(self):
         """Test server can be created."""
         from pytest_pipeline_mcp.server import server
-        assert server.name == "pytest-generator"
+        assert server.name == "pytest-pipeline"

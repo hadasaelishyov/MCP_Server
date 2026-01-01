@@ -1,9 +1,8 @@
-"""
-Code Fixer - Automatically fix bugs based on test failures.
+"""AI-assisted code fixer.
 
-Uses AI to analyze test failures and generate minimal fixes
-for the source code, then verifies the fixes work.
+Generates minimal fixes from failing pytest output and can optionally verify by re-running tests.
 """
+
 
 import os
 import re
@@ -19,21 +18,11 @@ from .models import (
 
 
 class CodeFixer:
-    """
-    Analyzes test failures and generates fixes for source code.
-    
-    Uses AI to understand what went wrong and propose minimal fixes.
-    Optionally verifies fixes by re-running tests.
-    """
+    """Generate minimal code fixes from failing tests (AI-assisted, optional verification)."""
 
     def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
-        """
-        Initialize the code fixer.
-        
-        Args:
-            api_key: OpenAI API key (or uses OPENAI_API_KEY env var)
-            model: Model to use (default: gpt-4o-mini for cost efficiency)
-        """
+        """Configure the fixer (API key from arg or OPENAI_API_KEY; model selectable)."""
+
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.client = None
@@ -56,18 +45,8 @@ class CodeFixer:
         test_output: str | None = None,
         verify: bool = True
     ) -> FixResult:
-        """
-        Analyze test failures and fix the source code.
-        
-        Args:
-            source_code: The buggy Python source code
-            test_code: The pytest test code
-            test_output: Raw pytest output (if None, will run tests first)
-            verify: Whether to verify the fix by re-running tests
-            
-        Returns:
-            FixResult with fixed code, bugs found, and verification
-        """
+        """Fix `source_code` to satisfy `test_code` using optional `test_output` and verification."""
+
         # Check if AI is available
         if not self.is_available():
             return FixResult(
@@ -223,15 +202,8 @@ CONFIDENCE: high/medium/low
         return "\n".join(lines)
 
     def _analyze_failures(self, test_output: str) -> list[FailureInfo]:
-        """
-        Parse test output to extract failure details.
+        """Parse test output to extract failure details."""
         
-        Args:
-            test_output: Raw pytest output or formatted failure info
-            
-        Returns:
-            List of FailureInfo objects
-        """
         failures = []
         lines = test_output.split('\n')
 
@@ -364,12 +336,8 @@ Please analyze the failures and fix the source code. Remember:
         ai_output: str,
         original_code: str
     ) -> tuple[str | None, list[BugInfo], list[FixInfo], ConfidenceLevel]:
-        """
-        Parse AI response to extract fixed code and explanations.
+        """Parse AI response to extract fixed code and explanations."""
         
-        Returns:
-            Tuple of (fixed_code, bugs_found, fixes_applied, confidence)
-        """
         fixed_code = None
         bugs_found = []
         fixes_applied = []
@@ -477,16 +445,8 @@ Please analyze the failures and fix the source code. Remember:
         return fixed_code, bugs_found, fixes_applied, confidence
 
     def _verify_fix(self, fixed_code: str, test_code: str) -> VerificationResult:
-        """
-        Verify the fix by re-running tests.
+        """Verify the fix by re-running tests."""
         
-        Args:
-            fixed_code: The fixed source code
-            test_code: The test code
-            
-        Returns:
-            VerificationResult with test outcomes
-        """
         try:
             from ..runner import run_tests
 
@@ -516,33 +476,8 @@ def fix_code(
     verify: bool = True,
     api_key: str | None = None
 ) -> FixResult:
-    """
-    Main entry point - fix buggy code based on test failures.
+    """Create a CodeFixer instance."""
     
-    Args:
-        source_code: The buggy Python source code
-        test_code: The pytest test code
-        test_output: Raw pytest output (optional - will run tests if not provided)
-        verify: Whether to verify the fix by re-running tests (default: True)
-        api_key: OpenAI API key (optional - uses env var if not provided)
-        
-    Returns:
-        FixResult with fixed code, bugs found, and verification
-        
-    Example:
-        >>> source = '''
-        ... def add(a, b):
-        ...     return a - b  # Bug: should be +
-        ... '''
-        >>> tests = '''
-        ... def test_add():
-        ...     assert add(2, 3) == 5
-        ... '''
-        >>> result = fix_code(source, tests)
-        >>> print(result.fixed_code)
-        def add(a, b):
-            return a + b
-    """
     fixer = CodeFixer(api_key=api_key)
     return fixer.fix(source_code, test_code, test_output, verify)
 

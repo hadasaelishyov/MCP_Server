@@ -1,14 +1,4 @@
-"""
-Generate Tests Tool - Generate pytest test cases for Python code.
-
-This tool:
-1. Analyzes code structure
-2. Generates template-based tests
-3. Enriches with evidence (doctests, type hints, exceptions, boundaries)
-4. Optionally enhances with AI for better assertions
-
-Uses GenerationService for business logic.
-"""
+"""MCP handler for generate_tests (delegates to GenerationService)."""
 
 from __future__ import annotations
 
@@ -66,15 +56,7 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle generate_tests tool call.
-    
-    Args:
-        arguments: Tool arguments
-        
-    Returns:
-        List with single TextContent containing generated tests
-    """
+    """Generate pytest tests from 'code' or 'file_path' and return the result text."""
     service = GenerationService()
 
     result = service.generate(

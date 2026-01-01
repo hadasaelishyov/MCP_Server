@@ -1,3 +1,8 @@
+"""Repository analysis service.
+
+Clones a repo, discovers Python files, and runs per-file analysis to identify candidates for tests.
+"""
+
 from __future__ import annotations
 from pathlib import Path
 
@@ -8,12 +13,8 @@ from .github import GitHubService
 
 
 class RepositoryAnalysisService:
-    """
-    Service for analyzing entire GitHub repositories.
-    
-    Clones a repository, discovers Python files, and analyzes each file
-    to determine which files need tests.
-    """
+    """Analyze a GitHub repository by cloning, discovering Python files, and analyzing each file."""
+
     _DEFAULT_EXCLUDED_PARTS = {"__pycache__", "venv", ".venv", "node_modules", "dist", "build"}
 
     def __init__(

@@ -1,8 +1,5 @@
-"""
-Test Runner - Executes pytest tests and measures coverage.
+"""Execute pytest in an isolated temp workspace and parse results/coverage."""
 
-Creates temporary environment, runs tests, parses results.
-"""
 
 import json
 import os
@@ -22,37 +19,18 @@ STDLIB_MODULES: Final[frozenset[str]] = frozenset({
 })
 
 class PytestRunner:
-    """
-    Executes pytest tests in isolated environment.
-    
-    Creates temp directory with source and test files,
-    runs pytest with coverage, parses and returns results.
-    """
+    """Run pytest for provided source+tests and return structured results."""
 
     def __init__(self, source_code: str, test_code: str):
-        """
-        Initialize test runner.
-        
-        Args:
-            source_code: Python source code to test
-            test_code: Pytest test code
-        """
+        """Store inputs and infer the tested module name from test imports."""
+
         self.source_code = source_code
         self.test_code = test_code
         self.module_name = self._detect_module_name(test_code)
 
     def _detect_module_name(self, test_code: str) -> str:
-        """
-        Detect module name from test imports.
+        """Infer module name from 'from X import ...' lines in test code."""
         
-        Looks for 'from X import ...' pattern in test code.
-        
-        Args:
-            test_code: The pytest test code
-            
-        Returns:
-            Detected module name or 'module' as default
-        """
         for line in test_code.split('\n'):
             line = line.strip()
 
@@ -68,12 +46,8 @@ class PytestRunner:
         return "module"  # default fallback
 
     def run(self) -> RunResult:
-        """
-        Execute tests and return results.
+        """Write files to a temp dir, run pytest+coverage, and return a RunResult."""
         
-        Returns:
-            RunResult with pass/fail counts and coverage
-        """
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
@@ -109,17 +83,7 @@ class PytestRunner:
         source_file: Path,
         test_file: Path
     ) -> RunResult:
-        """
-        Run pytest and parse results.
-        
-        Args:
-            temp_path: Temporary directory path
-            source_file: Path to source file
-            test_file: Path to test file
-            
-        Returns:
-            RunResult with test outcomes and coverage
-        """
+        """Execute pytest subprocess and parse test+coverage results."""
 
         coverage_json = temp_path / "coverage.json"
         python_exe = sys.executable
@@ -209,16 +173,8 @@ class PytestRunner:
         )
 
     def _parse_pytest_output(self, stdout: str, stderr: str) -> list[TestResult]:
-        """
-        Parse pytest verbose output to extract test results.
+        """Parse pytest output into TestResult entries."""
         
-        Args:
-            stdout: pytest stdout
-            stderr: pytest stderr
-            
-        Returns:
-            List of TestResult objects
-        """
         results = []
         combined_output = stdout + "\n" + stderr
 
@@ -312,15 +268,8 @@ class PytestRunner:
         return "Unknown error occurred"
 
     def _parse_coverage(self, coverage_file: Path) -> CoverageResult | None:
-        """
-        Parse coverage.json file.
-        
-        Args:
-            coverage_file: Path to coverage.json
-            
-        Returns:
-            CoverageResult or None if not available
-        """
+        """Parse coverage JSON report into a CoverageResult (or None)."""
+
         if not coverage_file.exists():
             return None
 
@@ -359,17 +308,7 @@ class PytestRunner:
 
 
 def run_tests(source_code: str, test_code: str) -> RunResult:
-    """
-    Main entry point - run tests and return results.
-    
-    Module name is auto-detected from test imports.
-    
-    Args:
-        source_code: Python source code to test
-        test_code: Pytest test code
-        
-    Returns:
-        RunResult with test outcomes and coverage
-    """
+    """Convenience wrapper that runs tests via PytestRunner."""
+
     runner = PytestRunner(source_code, test_code)
     return runner.run()

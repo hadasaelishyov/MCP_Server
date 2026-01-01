@@ -1,13 +1,4 @@
-"""
-Create Test PR Tool - Create a GitHub Pull Request with generated tests.
-
-This tool:
-1. Creates a new branch
-2. Commits the test file
-3. Opens a pull request
-
-Uses GitHubService for all GitHub operations.
-"""
+"""MCP handler for create_test_pr (delegates to GitHubService)."""
 
 from __future__ import annotations
 
@@ -67,15 +58,8 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle create_test_pr tool call.
-    
-    Args:
-        arguments: Tool arguments
-        
-    Returns:
-        List with single TextContent containing PR info
-    """
+    """Create a PR that adds the provided generated tests to the repository."""
+
     repo_url = arguments.get("repo_url", "")
     test_code = arguments.get("test_code", "")
     target_file = arguments.get("target_file", "")

@@ -1,14 +1,4 @@
-"""
-Run Tests Tool - Execute pytest tests and measure code coverage.
-
-This tool:
-1. Takes source code and test code
-2. Runs in isolated temporary environment
-3. Reports pass/fail results
-4. Measures code coverage via pytest-cov
-
-Uses ExecutionService for business logic.
-"""
+"""MCP handler for run_tests (delegates to ExecutionService)."""
 
 from __future__ import annotations
 
@@ -49,15 +39,7 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle run_tests tool call.
-    
-    Args:
-        arguments: Tool arguments (source_code, test_code)
-        
-    Returns:
-        List with single TextContent containing test results
-    """
+    """Run pytest for given source + test code and return a formatted result."""
     service = ExecutionService()
 
     result = service.run(

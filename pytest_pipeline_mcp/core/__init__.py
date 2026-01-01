@@ -1,19 +1,5 @@
-"""
-Core - Pure business logic for pytest pipeline.
+"""Core domain logic for the pytest pipeline."""
 
-This package contains reusable logic with NO dependencies on:
-- MCP (Model Context Protocol)
-- Services layer
-- External frameworks
-
-Can be used independently in CLI, REST API, or any other interface.
-
-Modules:
-- analyzer: Code parsing and analysis
-- generators: Test case generation
-- runner: Test execution
-- fixer: AI-powered code fixing
-"""
 
 from .analyzer import analyze_code, analyze_file, AnalysisResult, FunctionInfo, ClassInfo
 from .generators import generate_tests, GeneratedTest, GeneratedTestCase, TemplateGenerator

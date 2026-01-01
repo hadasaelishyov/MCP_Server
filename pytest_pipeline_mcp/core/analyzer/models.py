@@ -1,6 +1,4 @@
-"""
-Data models for code analysis.
-"""
+"""Data models for code analysis."""
 
 from dataclasses import dataclass, field
 from typing import Literal

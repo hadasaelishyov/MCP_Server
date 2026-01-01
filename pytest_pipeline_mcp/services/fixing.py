@@ -1,12 +1,8 @@
-"""
-Fixing Service - Business logic for automatic code fixing.
+"""Code fixing service.
 
-Wraps the fixer module with:
-- Input validation
-- Structured error handling via ServiceResult
-
-Returns the existing FixResult model - no duplication.
+Attempts to fix failing code given tests/output and returns FixResult in ServiceResult.
 """
+
 
 from __future__ import annotations
 
@@ -16,16 +12,7 @@ from .base import ErrorCode, ServiceResult
 
 
 class FixingService:
-    """
-    Service for automatically fixing buggy code.
-    
-    Orchestrates:
-    1. Input validation
-    2. AI-based code fixing
-    3. Optional verification via test re-run
-    
-    This class is stateless - no dependencies needed.
-    """
+    """Fix code based on failing tests (optionally verify by re-running)."""
 
     def fix(
         self,
@@ -35,28 +22,8 @@ class FixingService:
         verify: bool = True,
         api_key: str | None = None
     ) -> ServiceResult[FixResult]:
-        """
-        Fix buggy code based on failing tests.
-        
-        Args:
-            source_code: Python source code (contains bugs)
-            test_code: Pytest test code
-            test_output: Raw pytest output (runs tests if not provided)
-            verify: Whether to verify fix by re-running tests
-            api_key: OpenAI API key (uses env var if not provided)
-            
-        Returns:
-            ServiceResult containing FixResult
-            
-        Example:
-            service = FixingService()
-            result = service.fix(
-                source_code="def add(a, b): return a - b",  # Bug!
-                test_code="def test_add(): assert add(1, 2) == 3"
-            )
-            if result.success and result.data.success:
-                print(result.data.fixed_code)
-        """
+        """Attempt to fix `source_code` using `test_code` (+ optional test output / verification)."""
+
         # Step 1: Validate inputs
         validation_error = self._validate_inputs(source_code, test_code)
         if validation_error:
@@ -93,22 +60,8 @@ class FixingService:
         verify: bool = True,
         api_key: str | None = None
     ) -> ServiceResult[str]:
-        """
-        Fix code and return just the fixed code string.
-        
-        Convenience method when you only need the fixed code.
-        Returns error if fix was unsuccessful.
-        
-        Args:
-            source_code: Python source code (contains bugs)
-            test_code: Pytest test code
-            test_output: Raw pytest output
-            verify: Whether to verify fix
-            api_key: OpenAI API key
-            
-        Returns:
-            ServiceResult containing fixed code string
-        """
+        """Fix code and return only the fixed code string (fails if fix unsuccessful)."""
+
         result = self.fix(
             source_code=source_code,
             test_code=test_code,
@@ -145,16 +98,8 @@ class FixingService:
         source_code: str,
         test_code: str
     ) -> ServiceResult[FixResult] | None:
-        """
-        Validate inputs and return error if invalid.
-        
-        Args:
-            source_code: Source code to validate
-            test_code: Test code to validate
-            
-        Returns:
-            ServiceResult with error, or None if valid
-        """
+        """Validate inputs and return error if invalid."""
+
         if not source_code or not source_code.strip():
             return ServiceResult.fail(
                 ErrorCode.MISSING_INPUT,

@@ -1,8 +1,5 @@
-"""
-Doctest Extractor - Parse examples from docstrings.
+"""Extract doctest examples from docstrings and convert them to pytest assertions."""
 
-Extracts >>> examples and their expected outputs using Python's built-in doctest module.
-"""
 
 import ast
 import doctest
@@ -18,18 +15,8 @@ class DoctestExample:
 
 
 def extract_doctests(docstring: str | None) -> list[DoctestExample]:
-    """
-    Extract doctest examples from a docstring.
-    
-    Uses Python's built-in doctest.DocTestParser for reliable parsing,
-    including multi-line examples with ... continuation.
-    
-    Args:
-        docstring: Function's docstring
-        
-    Returns:
-        List of DoctestExample objects
-    """
+    """Extract doctest examples with expected outputs from a docstring."""
+
     if not docstring:
         return []
 
@@ -62,16 +49,8 @@ def extract_doctests(docstring: str | None) -> list[DoctestExample]:
 
 
 def doctest_to_assertion(example: DoctestExample, function_name: str) -> str | None:
-    """
-    Convert a doctest example to a pytest assertion.
-    
-    Args:
-        example: The doctest example
-        function_name: Name of the function being tested
-        
-    Returns:
-        Assertion string or None if can't convert
-    """
+    """Convert a doctest example into a safe pytest assertion when possible."""
+
     call = example.call
     expected = example.expected
 

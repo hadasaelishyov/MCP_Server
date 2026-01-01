@@ -1,12 +1,8 @@
-"""
-Execution Service - Business logic for test execution.
+"""Test execution service.
 
-Wraps the runner module with:
-- Input validation
-- Structured error handling via ServiceResult
-
-Returns the existing RunResult model - no duplication.
+Runs generated pytest tests (including coverage) and returns RunResult in ServiceResult.
 """
+
 
 from __future__ import annotations
 
@@ -16,41 +12,15 @@ from .base import ErrorCode, ServiceResult
 
 
 class ExecutionService:
-    """
-    Service for executing pytest tests.
+    """Execute pytest tests for given source + tests and return a RunResult."""
     
-    Orchestrates:
-    1. Input validation
-    2. Test execution in isolated environment
-    3. Coverage collection
-    
-    This class is stateless - no dependencies needed.
-    """
-
     def run(
         self,
         source_code: str,
         test_code: str
     ) -> ServiceResult[RunResult]:
-        """
-        Execute tests against source code.
+        """Run pytest tests for the given source code and test code."""
         
-        Args:
-            source_code: Python source code to test
-            test_code: Pytest test code to execute
-            
-        Returns:
-            ServiceResult containing RunResult
-            
-        Example:
-            service = ExecutionService()
-            result = service.run(
-                source_code="def add(a, b): return a + b",
-                test_code="def test_add(): assert add(1, 2) == 3"
-            )
-            if result.success:
-                print(f"Passed: {result.data.passed}/{result.data.total}")
-        """
         # Step 1: Validate inputs
         validation_error = self._validate_inputs(source_code, test_code)
         if validation_error:
@@ -79,18 +49,8 @@ class ExecutionService:
         source_code: str,
         test_code: str
     ) -> ServiceResult[dict]:
-        """
-        Execute tests and return a summary dictionary.
-        
-        Convenience method for when you need JSON-serializable output.
-        
-        Args:
-            source_code: Python source code to test
-            test_code: Pytest test code to execute
-            
-        Returns:
-            ServiceResult containing summary dict
-        """
+        """Run tests and return a JSON-serializable summary."""
+
         result = self.run(source_code, test_code)
 
         if not result.success:
@@ -107,16 +67,8 @@ class ExecutionService:
         source_code: str,
         test_code: str
     ) -> ServiceResult[RunResult] | None:
-        """
-        Validate inputs and return error if invalid.
+        """Validate inputs and return error if invalid."""
         
-        Args:
-            source_code: Source code to validate
-            test_code: Test code to validate
-            
-        Returns:
-            ServiceResult with error, or None if valid
-        """
         if not source_code or not source_code.strip():
             return ServiceResult.fail(
                 ErrorCode.MISSING_INPUT,

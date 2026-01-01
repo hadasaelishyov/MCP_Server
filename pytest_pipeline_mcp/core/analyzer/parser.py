@@ -1,6 +1,4 @@
-"""
-Code Parser - Parse Python code using AST and extract structure.
-"""
+"""Code Parser - Parse Python code using AST and extract structure."""
 
 import ast
 
@@ -8,15 +6,8 @@ from .models import ClassInfo, FunctionInfo, ParameterInfo
 
 
 def parse_code(code: str) -> ast.Module | None:
-    """
-    Parse Python code into AST.
-    
-    Args:
-        code: Python source code
-        
-    Returns:
-        AST module or None if syntax error
-    """
+    """Parse source into an AST module (returns None on syntax error)."""
+
     try:
         return ast.parse(code)
     except SyntaxError:
@@ -24,15 +15,8 @@ def parse_code(code: str) -> ast.Module | None:
 
 
 def extract_functions(tree: ast.Module) -> list[FunctionInfo]:
-    """
-    Extract all top-level functions from AST.
-    
-    Args:
-        tree: Parsed AST module
-        
-    Returns:
-        List of FunctionInfo objects
-    """
+    """Extract top-level functions from an AST module."""
+
     functions = []
 
     for node in ast.iter_child_nodes(tree):
@@ -44,15 +28,8 @@ def extract_functions(tree: ast.Module) -> list[FunctionInfo]:
 
 
 def extract_classes(tree: ast.Module) -> list[ClassInfo]:
-    """
-    Extract all classes from AST.
-    
-    Args:
-        tree: Parsed AST module
-        
-    Returns:
-        List of ClassInfo objects
-    """
+    """Extract classes (and their methods) from an AST module."""
+
     classes = []
 
     for node in ast.iter_child_nodes(tree):

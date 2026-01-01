@@ -90,15 +90,8 @@ DEFAULT_VALUES = {
 
 
 def get_default_value(type_hint: str | None) -> str:
-    """
-    Get a safe default value for a type.
-    
-    Args:
-        type_hint: Type annotation string
-        
-    Returns:
-        Python literal string
-    """
+    """Return a safe default Python literal for the given type hint."""
+
     if not type_hint:
         return "None"
 
@@ -131,15 +124,8 @@ def get_default_value(type_hint: str | None) -> str:
 
 
 def generate_boundary_values(type_hint: str | None) -> list[BoundaryValue]:
-    """
-    Generate boundary test values for a type.
-    
-    Args:
-        type_hint: Type annotation string
-        
-    Returns:
-        List of BoundaryValue objects
-    """
+    """Return type-appropriate boundary values for the given type hint."""
+
     if not type_hint:
         return []
 

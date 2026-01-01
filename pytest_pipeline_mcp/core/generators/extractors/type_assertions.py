@@ -1,16 +1,6 @@
-"""
-Type Assertions - Generate assertions based on type hints.
+"""Generate safe pytest assertions from return type hints.
 
-Safely handles:
-- Simple types (int, str, float, bool, list, dict, etc.)
-- Optional types (Optional[X], X | None)
-- Union types (X | Y, Union[X, Y])
-- Union with None (X | Y | None)
-- Generic containers (list[X], dict[K, V])
-- Complex unions in containers (list[X | None])
-
-When type is too complex to safely check, falls back to container-only checks.
-Principle: Better weak than wrong - never generate invalid isinstance checks.
+Prefers correct/weak checks over incorrect checks (falls back when types are complex).
 """
 
 from dataclasses import dataclass
@@ -45,23 +35,8 @@ ISINSTANCE_MAPPING: Final[dict[str, str]] = {
 }
 
 def parse_type_hint(type_str: str) -> ParsedType:
-    """
-    Parse a type hint string into components.
-    
-    Handles:
-    - Simple: "str", "int", "float"
-    - None: "None"
-    - Optional: "Optional[str]"
-    - Union with None: "str | None", "int | str | None"
-    - Union without None: "int | str"
-    - typing.Union: "Union[str, int]"
-    
-    Args:
-        type_str: Type annotation string
-        
-    Returns:
-        ParsedType with base_types, allows_none, and is_valid
-    """
+    """Parse a type-hint string into base types + None-allowance, marking safety for isinstance."""
+
     type_str = type_str.strip()
 
     # Handle None
@@ -118,11 +93,8 @@ def parse_type_hint(type_str: str) -> ParsedType:
 
 
 def _split_comma_parts(inner: str) -> list[str]:
-    """
-    Split comma-separated parts handling nested brackets.
+    """Split comma-separated parts handling nested brackets."""
     
-    Example: "str, dict[str, int], None" -> ["str", "dict[str, int]", "None"]
-    """
     parts = []
     current = ""
     depth = 0
@@ -148,15 +120,8 @@ def _split_comma_parts(inner: str) -> list[str]:
 
 
 def _parse_type_parts(parts: list[str]) -> ParsedType:
-    """
-    Parse a list of union type parts.
+    """Parse a list of union type parts."""
     
-    Args:
-        parts: List like ["str", "int", "None"]
-        
-    Returns:
-        ParsedType with combined information
-    """
     base_types = []
     allows_none = False
     all_valid = True
@@ -185,16 +150,8 @@ def _parse_type_parts(parts: list[str]) -> ParsedType:
 
 
 def generate_isinstance_expression(parsed: ParsedType, var_name: str = "result") -> str | None:
-    """
-    Generate an isinstance check expression for a parsed type.
-    
-    Args:
-        parsed: Parsed type information
-        var_name: Variable name to check
-        
-    Returns:
-        Expression string like "x is None or isinstance(x, str)" or None if can't generate
-    """
+    """Build a safe isinstance expression (optionally allowing None), or return None if unsafe."""
+
     if not parsed.is_valid:
         return None
 
@@ -239,22 +196,8 @@ def generate_isinstance_expression(parsed: ParsedType, var_name: str = "result")
 
 
 def generate_type_assertions(return_type: str | None) -> list[str]:
-    """
-    Generate type-checking assertions based on return type.
-    
-    Handles complex types safely:
-    - Simple types: isinstance checks
-    - Union with None: "result is None or isinstance(result, ...)"
-    - Union types: isinstance with tuple
-    - Containers: container check + element checks if safe
-    - Complex/unknown types: falls back to container-only or no assertion
-    
-    Args:
-        return_type: The function's return type annotation
-        
-    Returns:
-        List of assertion code lines (can be empty if type is unknown)
-    """
+    """Generate safe assertion lines for a return type hint (may return empty)."""
+
     if not return_type:
         return []
 

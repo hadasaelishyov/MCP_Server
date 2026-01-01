@@ -1,22 +1,4 @@
-"""
-GitHub Integration Tools
-
-Tools for integrating with GitHub repositories:
-- analyze_repository: Clone and analyze a repo, find files needing tests
-- create_test_pr: Create a PR with generated tests
-- comment_test_results: Post test results as PR comment
-
-Usage:
-    from src.tools.github import TOOLS, HANDLERS
-    
-    # Get all tool definitions
-    for tool in TOOLS:
-        print(tool.name)
-    
-    # Get handler for a tool
-    handler = HANDLERS.get("analyze_repository")
-    result = await handler({"repo_url": "..."})
-"""
+"""Registry for GitHub MCP tool definitions and handlers."""
 
 from .analyze_repository import (
     TOOL_DEFINITION as ANALYZE_REPOSITORY_TOOL,

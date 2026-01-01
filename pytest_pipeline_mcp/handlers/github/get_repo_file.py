@@ -1,12 +1,4 @@
-"""
-Get Repo File Tool - Fetch a file content from a GitHub repository.
-
-This tool:
-1. Fetches a file content via GitHub API (Contents API)
-2. Returns the raw file content (best for piping into generate_tests)
-
-Uses GitHubService for GitHub operations.
-"""
+"""MCP handler for get_repo_file (delegates to GitHubService)."""
 
 from __future__ import annotations
 from typing import Final
@@ -57,15 +49,8 @@ TOOL_DEFINITION = Tool(
 # =============================================================================
 
 async def handle(arguments: dict) -> list[TextContent]:
-    """
-    Handle get_repo_file tool call.
+    """Fetch a file from a GitHub repo and return it as raw text or markdown."""
 
-    Args:
-        arguments: Tool arguments
-
-    Returns:
-        List with single TextContent containing the file content (or error)
-    """
     repo_url = arguments.get("repo_url", "")
     file_path = arguments.get("file_path", "")
     branch = arguments.get("branch", "main")

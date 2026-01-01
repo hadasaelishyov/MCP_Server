@@ -1,6 +1,4 @@
-"""
-Syntax Validator - Check if Python code is valid.
-"""
+"""Syntax Validator - Check if Python code is valid."""
 
 import ast
 from dataclasses import dataclass
@@ -16,15 +14,8 @@ class SyntaxResult:
 
 
 def validate_syntax(code: str) -> SyntaxResult:
-    """
-    Validate Python code syntax.
-    
-    Args:
-        code: Python source code as string
-        
-    Returns:
-        SyntaxResult with validation details
-    """
+    """Validate Python syntax and return a structured result."""
+
     try:
         ast.parse(code)
         return SyntaxResult(is_valid=True)

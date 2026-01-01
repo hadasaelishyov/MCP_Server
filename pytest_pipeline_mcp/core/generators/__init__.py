@@ -1,4 +1,4 @@
-"""Test generators - template-based and AI-ready."""
+"""Test generation package (template generator + optional AI enhancement)."""
 
 from .ai import AIEnhancer, EnhancementResult, create_enhancer
 from .base import GeneratedTest, GeneratedTestCase, TestGeneratorBase

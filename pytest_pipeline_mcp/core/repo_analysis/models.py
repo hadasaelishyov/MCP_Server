@@ -1,3 +1,5 @@
+"""Dataclasses for per-file and repository-level analysis used by GitHub tools."""
+
 from __future__ import annotations
 from dataclasses import dataclass, field
 

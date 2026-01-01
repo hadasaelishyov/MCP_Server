@@ -1,13 +1,9 @@
-"""
-GitHub Service - THIN wrapper for GitHub API operations.
+"""GitHub service helpers.
 
-This service ONLY handles GitHub API calls:
-- Cloning repositories
-- Creating pull requests
-- Posting comments
-
-All business logic (analysis, formatting) lives in the tools layer.
+Thin wrappers for cloning repos, reading files, creating PRs, and posting comments.
+Authentication via GITHUB_TOKEN (optional).
 """
+
 
 from __future__ import annotations
 
@@ -43,26 +39,9 @@ class CommentInfo:
 
 
 class GitHubService:
-    """
-    THIN service for GitHub API operations.
-    
-    Only handles:
-    - clone_repository() → Clone repo to temp dir
-    - create_pull_request() → Create PR with file
-    - post_comment() → Post comment on PR
-    - get_file_content() → Get file from repo
-    - cleanup() → Remove temp directory
-    
-    All business logic lives in tools/github/.
-    """
+    """GitHub operations used by services/tools (clone, file read, PR, comments, cleanup)."""
 
     def __init__(self, token: str | None = None):
-        """
-        Initialize GitHub service.
-        
-        Args:
-            token: GitHub personal access token (uses GITHUB_TOKEN env var if None)
-        """
         self._token = token or os.getenv("GITHUB_TOKEN")
         self._client = None  # Lazy initialization
 
@@ -82,14 +61,8 @@ class GitHubService:
         return self._client
 
     def _parse_repo_url(self, url: str) -> tuple[str, str] | None:
-        """
-        Parse GitHub URL to extract owner and repo name.
+        """Parse GitHub URL to extract owner and repo name."""
         
-        Supports:
-        - https://github.com/owner/repo
-        - https://github.com/owner/repo.git
-        - git@github.com:owner/repo.git
-        """
         patterns = [
             r"github\.com[/:]([^/]+)/([^/.]+?)(?:\.git)?/?$",
         ]
@@ -110,19 +83,7 @@ class GitHubService:
         repo_url: str,
         branch: str = "main"
     ) -> ServiceResult[CloneResult]:
-        """
-        Clone a GitHub repository to a temporary directory.
-        
-        Args:
-            repo_url: GitHub repository URL
-            branch: Branch to clone (default: main)
-            
-        Returns:
-            ServiceResult with CloneResult containing path and branch
-            
-        Note:
-            Caller is responsible for cleanup using cleanup_clone()
-        """
+        """Clone a GitHub repository to a temporary directory."""
         try:
             from git import Repo
         except ImportError:
@@ -189,21 +150,8 @@ class GitHubService:
         pr_title: str,
         pr_body: str
     ) -> ServiceResult[PRInfo]:
-        """
-        Create a pull request with a new/updated file.
+        """Create a pull request with a new/updated file."""
         
-        Args:
-            repo_url: GitHub repository URL
-            file_path: Path for the file in the repo (e.g., "tests/test_calc.py")
-            file_content: Content of the file
-            branch_name: Name for the new branch
-            commit_message: Commit message
-            pr_title: Pull request title
-            pr_body: Pull request description
-            
-        Returns:
-            ServiceResult with PRInfo containing URL, number, and branch
-        """
         if not self._token:
             return ServiceResult.fail(
                 ErrorCode.GITHUB_AUTH_ERROR,
@@ -299,17 +247,8 @@ class GitHubService:
         pr_number: int,
         body: str
     ) -> ServiceResult[CommentInfo]:
-        """
-        Post a comment on a pull request.
+        """Post a comment on a pull request."""
         
-        Args:
-            repo_url: GitHub repository URL
-            pr_number: Pull request number
-            body: Comment body (markdown supported)
-            
-        Returns:
-            ServiceResult with CommentInfo containing URL
-        """
         if not self._token:
             return ServiceResult.fail(
                 ErrorCode.GITHUB_AUTH_ERROR,
@@ -362,17 +301,8 @@ class GitHubService:
         file_path: str,
         branch: str = "main"
     ) -> ServiceResult[str]:
-        """
-        Get content of a file from a repository.
+        """Get content of a file from a repository."""
         
-        Args:
-            repo_url: GitHub repository URL
-            file_path: Path to file in repository
-            branch: Branch to get file from
-            
-        Returns:
-            ServiceResult with file content as string
-        """
         parsed = self._parse_repo_url(repo_url)
         if not parsed:
             return ServiceResult.fail(
