@@ -1,5 +1,5 @@
 """
-Pytest Generator MCP Server
+Pytest Pipeline MCP Server
 
 A Model Context Protocol server that generates pytest tests
 using static code analysis and AI enhancement.
@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create the MCP server instance
-server = Server("pytest-generator")
+server = Server("pytest-pipeline")
 
 
 # =============================================================================
@@ -81,7 +81,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
 async def run_server():
     """Run the MCP server."""
-    logger.info("Starting Pytest Generator MCP Server...")
+    logger.info("Starting Pytest Pipeline MCP Server...")
     logger.info(f"Registered {len(ALL_TOOLS)} tools: {[t.name for t in ALL_TOOLS]}")
 
     async with stdio_server() as (read_stream, write_stream):

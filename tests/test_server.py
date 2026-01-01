@@ -8,10 +8,10 @@ class TestServerBasics:
 
     def test_version(self):
         """Test version is defined."""
-        from src import __version__
+        from pytest_pipeline_mcp import __version__
         assert __version__ == "0.1.0"
 
     def test_server_creation(self):
         """Test server can be created."""
-        from src.server import server
+        from pytest_pipeline_mcp.server import server
         assert server.name == "pytest-generator"

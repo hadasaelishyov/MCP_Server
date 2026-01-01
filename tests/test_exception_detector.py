@@ -11,7 +11,7 @@ Covers:
 """
 
 import pytest
-from src.core.generators.extractors.exception_detector import (
+from pytest_pipeline_mcp.core.generators.extractors.exception_detector import (
     detect_exceptions,
     escape_for_regex,
     format_match_string,

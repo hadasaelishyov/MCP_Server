@@ -1,8 +1,8 @@
 """Tests for core analyzer."""
 
 import pytest
-from src.core.analyzer import analyze_code
-from src.core.analyzer.parser import parse_code, extract_functions, extract_classes
+from pytest_pipeline_mcp.core.analyzer import analyze_code
+from pytest_pipeline_mcp.core.analyzer.parser import parse_code, extract_functions, extract_classes
 
 
 class TestParser:

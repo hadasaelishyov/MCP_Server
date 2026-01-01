@@ -1,5 +1,5 @@
 """
-Core - Pure business logic for pytest generation.
+Core - Pure business logic for pytest pipeline.
 
 This package contains reusable logic with NO dependencies on:
 - MCP (Model Context Protocol)

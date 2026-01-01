@@ -1,5 +1,5 @@
 """
-Example module for testing pytest-generator-mcp.
+Example module for testing pytest-pipeline-mcp.
 """
 
 from typing import Optional

@@ -1,1 +1,1 @@
-"""Test suite for pytest-generator-mcp."""
+"""Test suite for pytest-pipeline-mcp."""

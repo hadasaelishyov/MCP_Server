@@ -1,5 +1,5 @@
 """
-Pytest Generator MCP Server
+Pytest Pipeline  MCP Server
 
 AI-powered test generation for Python code.
 """

@@ -1,7 +1,7 @@
 """Tests for the test runner module."""
 
 import pytest
-from src.core.runner import run_tests, PytestRunner, RunResult
+from pytest_pipeline_mcp.core.runner import run_tests, PytestRunner, RunResult
 
 
 class TestRunnerBasics:

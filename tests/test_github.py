@@ -12,13 +12,13 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 
-from src.services.github import GitHubService, CloneResult, PRInfo, CommentInfo
-from src.services.base import ErrorCode
-from src.core.repo_analysis.models import FileAnalysis, RepositoryAnalysis
-from src.handlers.github.analyze_repository import format_analysis
+from pytest_pipeline_mcp.services.github import GitHubService, CloneResult, PRInfo, CommentInfo
+from pytest_pipeline_mcp.services.base import ErrorCode
+from pytest_pipeline_mcp.core.repo_analysis.models import FileAnalysis, RepositoryAnalysis
+from pytest_pipeline_mcp.handlers.github.analyze_repository import format_analysis
 
-from src.handlers.github.create_test_pr import generate_pr_description
-from src.handlers.github.comment_test_results import format_test_comment
+from pytest_pipeline_mcp.handlers.github.create_test_pr import generate_pr_description
+from pytest_pipeline_mcp.handlers.github.comment_test_results import format_test_comment
 
 
 # =============================================================================
@@ -308,7 +308,7 @@ class TestAnalyzeRepositoryIntegration:
     @pytest.mark.asyncio
     async def test_missing_repo_url_error(self):
         """Missing repo_url returns error."""
-        from src.handlers.github.analyze_repository import handle
+        from pytest_pipeline_mcp.handlers.github.analyze_repository import handle
         
         result = await handle({})
         assert len(result) == 1
@@ -320,7 +320,7 @@ class TestGetRepoFileIntegration:
     @pytest.mark.asyncio
     async def test_missing_repo_url_error(self):
         """Missing repo_url returns error."""
-        from src.handlers.github.get_repo_file import handle
+        from pytest_pipeline_mcp.handlers.github.get_repo_file import handle
 
         result = await handle({"file_path": "src/app.py"})
         assert len(result) == 1
@@ -329,7 +329,7 @@ class TestGetRepoFileIntegration:
     @pytest.mark.asyncio
     async def test_missing_file_path_error(self):
         """Missing file_path returns error."""
-        from src.handlers.github.get_repo_file import handle
+        from pytest_pipeline_mcp.handlers.github.get_repo_file import handle
 
         result = await handle({"repo_url": "https://github.com/test/repo"})
         assert len(result) == 1
@@ -338,10 +338,10 @@ class TestGetRepoFileIntegration:
     @pytest.mark.asyncio
     async def test_success_returns_raw_code(self):
         """Successful call returns raw file content."""
-        from src.handlers.github.get_repo_file import handle
-        from src.services.base import ServiceResult
+        from pytest_pipeline_mcp.handlers.github.get_repo_file import handle
+        from pytest_pipeline_mcp.services.base import ServiceResult
 
-        with patch("src.handlers.github.get_repo_file.GitHubService") as mock_cls:
+        with patch("pytest_pipeline_mcp.handlers.github.get_repo_file.GitHubService") as mock_cls:
             mock_service = mock_cls.return_value
             mock_service.get_file_content.return_value = ServiceResult.ok("print('hi')\n")
 
@@ -368,7 +368,7 @@ class TestCreateTestPRIntegration:
     @pytest.mark.asyncio
     async def test_missing_required_fields(self):
         """Missing required fields return error."""
-        from src.handlers.github.create_test_pr import handle
+        from pytest_pipeline_mcp.handlers.github.create_test_pr import handle
         
         result = await handle({"repo_url": "https://github.com/test/repo"})
         assert len(result) == 1
@@ -377,7 +377,7 @@ class TestCreateTestPRIntegration:
     @pytest.mark.asyncio
     async def test_missing_token_error(self):
         """Missing token returns auth error."""
-        from src.handlers.github.create_test_pr import handle
+        from pytest_pipeline_mcp.handlers.github.create_test_pr import handle
         
         # Temporarily ensure no token
         import os
@@ -403,7 +403,7 @@ class TestCommentTestResultsIntegration:
     @pytest.mark.asyncio
     async def test_missing_pr_number(self):
         """Missing pr_number returns error."""
-        from src.handlers.github.comment_test_results import handle
+        from pytest_pipeline_mcp.handlers.github.comment_test_results import handle
         
         result = await handle({
             "repo_url": "https://github.com/test/repo",

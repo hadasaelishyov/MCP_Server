@@ -11,19 +11,19 @@ Tests the new tool handler files:
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 
-from src.handlers.core.analyze_code import (
+from pytest_pipeline_mcp.handlers.core.analyze_code import (
     TOOL_DEFINITION as ANALYZE_TOOL,
     handle as handle_analyze,
 )
-from src.handlers.core.generate_tests import (
+from pytest_pipeline_mcp.handlers.core.generate_tests import (
     TOOL_DEFINITION as GENERATE_TOOL,
     handle as handle_generate,
 )
-from src.handlers.core.run_tests import (
+from pytest_pipeline_mcp.handlers.core.run_tests import (
     TOOL_DEFINITION as RUN_TOOL,
     handle as handle_run,
 )
-from src.handlers.core.fix_code import (
+from pytest_pipeline_mcp.handlers.core.fix_code import (
     TOOL_DEFINITION as FIX_TOOL,
     handle as handle_fix,
 )
@@ -193,7 +193,7 @@ class TestExports:
     
     def test_core_exports_tools(self):
         """core module exports TOOLS list."""
-        from src.handlers.core import TOOLS
+        from pytest_pipeline_mcp.handlers.core import TOOLS
         
         assert isinstance(TOOLS, list)
         assert len(TOOLS) == 4
@@ -206,7 +206,7 @@ class TestExports:
     
     def test_core_exports_handlers(self):
         """core module exports HANDLERS dict."""
-        from src.handlers.core import HANDLERS
+        from pytest_pipeline_mcp.handlers.core import HANDLERS
         
         assert isinstance(HANDLERS, dict)
         assert len(HANDLERS) == 4
@@ -218,7 +218,7 @@ class TestExports:
     
     def test_github_exports_tools(self):
         """github module exports TOOLS list."""
-        from src.handlers.github import TOOLS
+        from pytest_pipeline_mcp.handlers.github import TOOLS
         
         assert isinstance(TOOLS, list)
         assert len(TOOLS) == 4
@@ -230,7 +230,7 @@ class TestExports:
     
     def test_github_exports_handlers(self):
         """github module exports HANDLERS dict."""
-        from src.handlers.github import HANDLERS
+        from pytest_pipeline_mcp.handlers.github import HANDLERS
         
         assert isinstance(HANDLERS, dict)
         assert len(HANDLERS) == 4
@@ -241,17 +241,17 @@ class TestServerIntegration:
     
     def test_all_tools_combined(self):
         """server.py combines all tools."""
-        from src.server import ALL_TOOLS
+        from pytest_pipeline_mcp.server import ALL_TOOLS
         
         assert len(ALL_TOOLS) == 8  # 4 core + 4 github
     
     def test_all_handlers_combined(self):
         """server.py combines all handlers."""
-        from src.server import ALL_HANDLERS
+        from pytest_pipeline_mcp.server import ALL_HANDLERS
         
         assert len(ALL_HANDLERS) == 8  # 4 core + 4 github
         
         # Check all tools have handlers
-        from src.server import ALL_TOOLS
+        from pytest_pipeline_mcp.server import ALL_TOOLS
         for tool in ALL_TOOLS:
             assert tool.name in ALL_HANDLERS

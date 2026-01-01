@@ -13,7 +13,7 @@ from pathlib import Path
 import tempfile
 import os
 
-from src.services import (
+from pytest_pipeline_mcp.services import (
     # Base
     ServiceResult,
     ServiceError,

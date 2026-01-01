@@ -17,7 +17,7 @@ except ImportError:
 
 from unittest.mock import Mock, patch
 
-from src.core.fixer import (
+from pytest_pipeline_mcp.core.fixer import (
     CodeFixer,
     fix_code,
     create_fixer,

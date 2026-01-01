@@ -13,7 +13,7 @@ Covers:
 """
 
 import pytest
-from src.core.generators.extractors.type_assertions import (
+from pytest_pipeline_mcp.core.generators.extractors.type_assertions import (
     generate_type_assertions,
     parse_type_hint,
     generate_isinstance_expression,

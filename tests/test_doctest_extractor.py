@@ -3,7 +3,7 @@ Tests for doctest_extractor module.
 """
 
 import unittest
-from src.core.generators.extractors.doctest_extractor import DoctestExample, extract_doctests, doctest_to_assertion
+from pytest_pipeline_mcp.core.generators.extractors.doctest_extractor import DoctestExample, extract_doctests, doctest_to_assertion
 
 
 class TestExtractDoctests(unittest.TestCase):
