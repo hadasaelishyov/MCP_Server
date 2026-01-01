@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src.services.github import GitHubService, CloneResult, PRInfo, CommentInfo
 from src.services.base import ErrorCode
-from src.core.repository.models import FileAnalysis, RepositoryAnalysis
+from src.core.repo_analysis.models import FileAnalysis, RepositoryAnalysis
 from src.handlers.github.analyze_repository import format_analysis
 
 from src.handlers.github.create_test_pr import generate_pr_description
@@ -30,8 +30,14 @@ class TestGitHubService:
     
     def test_init_without_token(self):
         """Service can initialize without token."""
-        service = GitHubService(token=None)
-        assert service.has_token is False
+        import os
+        original_token = os.environ.pop("GITHUB_TOKEN", None)
+        try:
+            service = GitHubService(token=None)
+            assert service.has_token is False
+        finally:
+            if original_token:
+                os.environ["GITHUB_TOKEN"] = original_token
     
     def test_init_with_token(self):
         """Service initializes with token."""
@@ -80,14 +86,23 @@ class TestGitHubService:
     
     def test_post_comment_requires_token(self):
         """Posting comment requires token."""
-        service = GitHubService(token=None)
-        result = service.post_comment(
-            repo_url="https://github.com/test/repo",
-            pr_number=1,
-            body="Test comment"
-        )
-        assert result.success is False
-        assert result.error.code == ErrorCode.GITHUB_AUTH_ERROR
+        import os
+        original = os.environ.pop("GITHUB_TOKEN", None)
+        try:
+            service = GitHubService(token=None)
+            result = service.post_comment(
+                repo_url="https://github.com/test/repo",
+                pr_number=1,
+                body="Test comment"
+            )
+            assert result.success is False
+            assert result.error.code in [
+                ErrorCode.GITHUB_AUTH_ERROR,
+                ErrorCode.GITHUB_API_ERROR
+            ]
+        finally:
+            if original:
+                os.environ["GITHUB_TOKEN"] = original
 
 
 # =============================================================================

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from mcp.types import TextContent, Tool
 
-from ...core.repository.models import RepositoryAnalysis
+from ...core.repo_analysis.models import RepositoryAnalysis
 from ...services import RepositoryAnalysisService
 
 # =============================================================================

@@ -14,8 +14,7 @@ Principle: Better weak than wrong - never generate invalid isinstance checks.
 """
 
 from dataclasses import dataclass
-
-from ....constants import ISINSTANCE_MAPPING, SIMPLE_TYPES
+from typing import Final
 
 
 @dataclass
@@ -25,7 +24,25 @@ class ParsedType:
     allows_none: bool      # Whether None is allowed
     is_valid: bool         # Whether we can generate safe isinstance checks
 
+# Types that can be safely used with isinstance
+SIMPLE_TYPES: Final[frozenset[str]] = frozenset({
+    "int", "str", "float", "bool", "list", "dict",
+    "set", "tuple", "bytes", "bytearray"
+})
 
+# Special isinstance mappings (float should accept int)
+ISINSTANCE_MAPPING: Final[dict[str, str]] = {
+    "int": "int",
+    "str": "str",
+    "float": "(int, float)",
+    "bool": "bool",
+    "list": "list",
+    "dict": "dict",
+    "set": "set",
+    "tuple": "tuple",
+    "bytes": "bytes",
+    "bytearray": "bytearray",
+}
 
 def parse_type_hint(type_str: str) -> ParsedType:
     """
@@ -51,6 +68,10 @@ def parse_type_hint(type_str: str) -> ParsedType:
     if type_str == "None":
         return ParsedType(base_types=[], allows_none=True, is_valid=True)
 
+    # handle Literal
+    if type_str.startswith("Literal["):
+        return ParsedType(base_types=[], allows_none=False, is_valid=False)
+    
     # Handle Optional[X]
     if type_str.startswith("Optional[") and type_str.endswith("]"):
         inner = type_str[9:-1].strip()

@@ -8,7 +8,6 @@ for the source code, then verifies the fixes work.
 import os
 import re
 
-from ...constants import AI_MAX_TOKENS, AI_TEMPERATURE, DEFAULT_AI_MODEL
 from .models import (
     BugInfo,
     ConfidenceLevel,
@@ -27,7 +26,7 @@ class CodeFixer:
     Optionally verifies fixes by re-running tests.
     """
 
-    def __init__(self, api_key: str | None = None, model: str = DEFAULT_AI_MODEL):
+    def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
         """
         Initialize the code fixer.
         
@@ -124,8 +123,8 @@ class CodeFixer:
                     {"role": "system", "content": self._get_system_prompt()},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=AI_TEMPERATURE,
-                max_tokens=AI_MAX_TOKENS
+                temperature=0.2,
+                max_tokens=2000
 
             )
 

@@ -11,10 +11,15 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Final
 
-from ...constants import STDLIB_MODULES, TEST_TIMEOUT_SECONDS
 from .models import CoverageResult, RunResult, TestResult
 
+# Standard library modules to skip when detecting imports
+STDLIB_MODULES: Final[frozenset[str]] = frozenset({
+    'pytest', 'unittest', 'typing', 'collections',
+    'os', 'sys', 'json', 're', 'ast', 'pathlib'
+})
 
 class PytestRunner:
     """
@@ -135,7 +140,7 @@ class PytestRunner:
                 cwd=str(temp_path),
                 capture_output=True,
                 text=True,
-                timeout=TEST_TIMEOUT_SECONDS,
+                timeout=30,
                 stdin=subprocess.DEVNULL,
                 env={**os.environ, "PYTHONPATH": str(temp_path)}
             )

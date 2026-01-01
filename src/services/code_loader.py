@@ -9,14 +9,15 @@ _get_code() function. This makes it:
 """
 
 from __future__ import annotations
+from typing import Final
 
 from dataclasses import dataclass
 from pathlib import Path
 
 # Import constants from the project
-from ..constants import ALLOWED_EXTENSIONS, MAX_CODE_SIZE
 from .base import ErrorCode, ServiceResult
 
+MAX_CODE_SIZE: Final[int] = 1_000_000  # 1MB
 
 @dataclass(frozen=True)
 class LoadedCode:
@@ -52,7 +53,7 @@ class CodeLoader:
     def __init__(
         self,
         max_size: int = MAX_CODE_SIZE,
-        allowed_extensions: frozenset[str] = ALLOWED_EXTENSIONS
+        allowed_extensions: frozenset[str] = frozenset({'.py'})
     ):
         """
         Initialize the code loader.

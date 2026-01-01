@@ -1,13 +1,19 @@
 from __future__ import annotations
 from pathlib import Path
 
-from ..core.repository.models import FileAnalysis, RepositoryAnalysis
+from ..core.repo_analysis.models import FileAnalysis, RepositoryAnalysis
 from .analysis import AnalysisService
 from .base import ServiceResult
 from .github import GitHubService
 
 
 class RepositoryAnalysisService:
+    """
+    Service for analyzing entire GitHub repositories.
+    
+    Clones a repository, discovers Python files, and analyzes each file
+    to determine which files need tests.
+    """
     _DEFAULT_EXCLUDED_PARTS = {"__pycache__", "venv", ".venv", "node_modules", "dist", "build"}
 
     def __init__(
@@ -16,6 +22,7 @@ class RepositoryAnalysisService:
         analysis_service: AnalysisService | None = None,
         excluded_parts: set[str] | None = None,
     ):
+        
         self._github = github_service or GitHubService()
         self._analysis = analysis_service or AnalysisService()
         self._excluded = excluded_parts or self._DEFAULT_EXCLUDED_PARTS

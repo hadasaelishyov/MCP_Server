@@ -9,11 +9,13 @@ Uses GitHubService for GitHub operations.
 """
 
 from __future__ import annotations
+from typing import Final
 
 from mcp.types import TextContent, Tool
 
-from ...constants import MAX_CODE_SIZE
 from ...services import GitHubService
+
+MAX_CODE_SIZE: Final[int] = 1_000_000  # 1MB
 
 # =============================================================================
 # Tool Definition

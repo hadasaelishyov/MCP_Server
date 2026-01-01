@@ -221,7 +221,7 @@ class TestExports:
         from src.handlers.github import TOOLS
         
         assert isinstance(TOOLS, list)
-        assert len(TOOLS) == 3
+        assert len(TOOLS) == 4
         
         tool_names = [t.name for t in TOOLS]
         assert "analyze_repository" in tool_names
@@ -233,7 +233,7 @@ class TestExports:
         from src.handlers.github import HANDLERS
         
         assert isinstance(HANDLERS, dict)
-        assert len(HANDLERS) == 3
+        assert len(HANDLERS) == 4
 
 
 class TestServerIntegration:
@@ -243,13 +243,13 @@ class TestServerIntegration:
         """server.py combines all tools."""
         from src.server import ALL_TOOLS
         
-        assert len(ALL_TOOLS) == 7  # 4 core + 3 github
+        assert len(ALL_TOOLS) == 8  # 4 core + 4 github
     
     def test_all_handlers_combined(self):
         """server.py combines all handlers."""
         from src.server import ALL_HANDLERS
         
-        assert len(ALL_HANDLERS) == 7  # 4 core + 3 github
+        assert len(ALL_HANDLERS) == 8  # 4 core + 4 github
         
         # Check all tools have handlers
         from src.server import ALL_TOOLS

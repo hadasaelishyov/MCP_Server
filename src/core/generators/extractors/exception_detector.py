@@ -47,15 +47,13 @@ def detect_exceptions(code: str, function_name: str) -> list[DetectedException]:
 
 
 def _extract_raises(func_node: ast.FunctionDef) -> list[DetectedException]:
-    """Extract all raise statements from a function."""
+    """Extract all raises, including from nested functions."""
     exceptions = []
-
-    for node in ast.walk(func_node):
+    for node in ast.walk(func_node): 
         if isinstance(node, ast.Raise):
             exc = _parse_raise(node)
             if exc:
                 exceptions.append(exc)
-
     return exceptions
 
 
