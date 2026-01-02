@@ -88,44 +88,70 @@ DEFAULT_VALUES = {
     "Any": "None",
 }
 
+# Guess defaults by parameter name patterns
+NAME_PATTERNS = {
+    # Numeric names → int
+    ('a', 'b', 'x', 'y', 'n', 'i', 'j', 'k', 'num', 'number', 'count', 'index', 'size', 'length'): "0",
+    # String names → str
+    ('s', 'name', 'text', 'string', 'msg', 'message', 'title', 'label', 'key', 'value', 'path', 'url'): '""',
+    # Collection names → list
+    ('items', 'values', 'elements', 'data', 'args', 'results'): "[]",
+    # Dict names → dict
+    ('config', 'options', 'params', 'kwargs', 'settings', 'mapping'): "{}",
+    # Boolean names → bool
+    ('flag', 'enabled', 'active', 'valid', 'ok', 'success', 'is_valid', 'has_value'): "True",
+}
 
-def get_default_value(type_hint: str | None) -> str:
+def get_default_value(type_hint: str | None, param_name: str | None = None) -> str:
     """Return a safe default Python literal for the given type hint."""
 
-    if not type_hint:
-        return "None"
+    if type_hint:
+        
+        # Clean type
+        clean = type_hint.strip()
 
-    # Clean type
-    clean = type_hint.strip()
+        # Check direct match
+        if clean in DEFAULT_VALUES:
+            return DEFAULT_VALUES[clean]
 
-    # Check direct match
-    if clean in DEFAULT_VALUES:
-        return DEFAULT_VALUES[clean]
+        # Handle Optional[X] - default to None
+        if clean.startswith("Optional[") or " | None" in clean:
+            return "None"
 
-    # Handle Optional[X] - default to None
-    if clean.startswith("Optional[") or " | None" in clean:
-        return "None"
+        # Handle list[X] - return empty list
+        if clean.startswith("list["):
+            return "[]"
 
-    # Handle list[X] - return empty list
-    if clean.startswith("list["):
-        return "[]"
+        # Handle dict[X, Y] - return empty dict
+        if clean.startswith("dict["):
+            return "{}"
 
-    # Handle dict[X, Y] - return empty dict
-    if clean.startswith("dict["):
-        return "{}"
+        # Get base type
+        base = clean.split("[")[0]
+        if base in DEFAULT_VALUES:
+            return DEFAULT_VALUES[base]
 
-    # Get base type
-    base = clean.split("[")[0]
-    if base in DEFAULT_VALUES:
-        return DEFAULT_VALUES[base]
-
-    # Unknown type - return None
-    return "None"
+    if param_name:
+        clean_name = param_name.lower().lstrip('_')
+        
+        for names, default in NAME_PATTERNS.items():
+            if clean_name in names or any(clean_name.startswith(n) for n in names):
+                return default
+    
+    # Last resort: return 0 (safer than None for most operations)
+    return "0"
 
 
 def generate_boundary_values(type_hint: str | None) -> list[BoundaryValue]:
-    """Return type-appropriate boundary values for the given type hint."""
-
+    """
+    Generate boundary test values for a type.
+    
+    Args:
+        type_hint: Type annotation string
+        
+    Returns:
+        List of BoundaryValue objects
+    """
     if not type_hint:
         return []
 

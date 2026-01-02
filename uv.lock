@@ -1043,7 +1043,6 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "gitpython", specifier = ">=3.1.40" },
-    { name = "mcp", specifier = ">=1.0.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.25.0" },
     { name = "openai", specifier = ">=2.14.0" },
     { name = "pygithub", specifier = ">=2.1.1" },

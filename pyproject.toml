@@ -4,14 +4,12 @@ version = "0.1.0"
 description = "MCP server for end-to-end pytest workflow: analyze → generate → run → fix"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
 authors = [
     { name = "Hadasa", email = "h0548449206@gmail.com" }
 ]
 keywords = ["mcp", "pytest", "test-generation", "code-analysis"]
 
 dependencies = [
-    "mcp>=1.0.0",
     "mcp[cli]>=1.25.0",
     "openai>=2.14.0",
     # GitHub integration

@@ -54,9 +54,24 @@ def doctest_to_assertion(example: DoctestExample, function_name: str) -> str | N
     call = example.call
     expected = example.expected
 
-    # Verify the call is for this function
-    if not call.startswith(function_name + '('):
+    try:
+        expr = ast.parse(call, mode="eval").body
+    except SyntaxError:
         return None
+
+    if not isinstance(expr, ast.Call):
+        return None
+
+    func = expr.func
+    ok = (
+        isinstance(func, ast.Name) and func.id == function_name
+    ) or (
+        isinstance(func, ast.Attribute) and func.attr == function_name
+    )
+
+    if not ok:
+        return None
+
 
     # Handle different expected types
     if expected in ('True', 'False', 'None'):

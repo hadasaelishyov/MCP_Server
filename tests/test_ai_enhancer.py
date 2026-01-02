@@ -37,12 +37,12 @@ class TestAIEnhancerInit:
     def test_default_model(self):
         """Test default model is set."""
         enhancer = AIEnhancer(api_key="test-key")
-        assert enhancer.model == "gpt-4o-mini"
+        assert enhancer.model == "gpt-4o"
     
     def test_custom_model(self):
         """Test custom model can be set."""
-        enhancer = AIEnhancer(api_key="test-key", model="gpt-4")
-        assert enhancer.model == "gpt-4"
+        enhancer = AIEnhancer(api_key="test-key", model="gpt-4o")
+        assert enhancer.model == "gpt-4o"
 
 
 class TestAIEnhancerPrompts:

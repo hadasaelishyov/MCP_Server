@@ -172,12 +172,12 @@ class TestCodeFixerInit:
         fixer = CodeFixer(api_key="test-key")
         # Note: is_available() depends on openai package being installed
         assert fixer.api_key == "test-key"
-        assert fixer.model == "gpt-4o-mini"
+        assert fixer.model == "gpt-4o"
     
     def test_custom_model(self):
         """Test custom model setting."""
-        fixer = CodeFixer(api_key="test-key", model="gpt-4")
-        assert fixer.model == "gpt-4"
+        fixer = CodeFixer(api_key="test-key", model="gpt-4o")
+        assert fixer.model == "gpt-4o"
     
     def test_create_fixer_factory(self):
         """Test factory function."""

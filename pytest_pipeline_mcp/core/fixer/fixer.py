@@ -20,7 +20,7 @@ from .models import (
 class CodeFixer:
     """Generate minimal code fixes from failing tests (AI-assisted, optional verification)."""
 
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model: str = "gpt-4o"):
         """Configure the fixer (API key from arg or OPENAI_API_KEY; model selectable)."""
 
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")

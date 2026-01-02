@@ -8,8 +8,8 @@ from ..analyzer.models import AnalysisResult, ClassInfo, FunctionInfo
 from .base import GeneratedTest, GeneratedTestCase, TestGeneratorBase
 from .extractors.boundary_values import generate_boundary_values, get_default_value
 from .extractors.doctest_extractor import doctest_to_assertion, extract_doctests
-from .extractors.exception_detector import detect_exceptions, generate_exception_test
 from .extractors.type_assertions import generate_type_assertions
+from .extractors.exception_detector import detect_exceptions, generate_exception_test, infer_trigger_overrides
 
 
 class TemplateGenerator(TestGeneratorBase):
@@ -17,7 +17,6 @@ class TemplateGenerator(TestGeneratorBase):
 
     def __init__(self, source_code: str = ""):
         """Create generator (source_code is used for exception detection)."""
-
         self.source_code = source_code
 
     def generate_for_function(
@@ -32,10 +31,7 @@ class TemplateGenerator(TestGeneratorBase):
         if func.name.startswith('_'):
             return tests
 
-        # Layer 1: Basic smoke test
-        tests.append(self._generate_basic_test(func))
-
-        # Layer 2: Evidence-based tests
+        # Layer 2: Evidence-based tests FIRST
 
         # From doctests
         doctest_cases = self._generate_from_doctests(func)
@@ -61,6 +57,9 @@ class TemplateGenerator(TestGeneratorBase):
         if heuristic_test:
             tests.append(heuristic_test)
 
+        # Layer 1: Smoke test ONLY as fallback when no evidence found
+        if not tests:
+            return [self._generate_basic_test(func)]
         return tests
 
     def generate_for_class(
@@ -71,71 +70,65 @@ class TemplateGenerator(TestGeneratorBase):
         """Generate test cases for a class."""
         tests = []
 
-        # Test class instantiation
+        # Test class instantiation (always)
         tests.append(self._generate_class_init_test(cls))
 
         # Test each public method
         for method in cls.methods:
-            if not method.name.startswith('_') or method.name == '__init__':
-                if method.name != '__init__':
-                    method_tests = self._generate_method_tests(cls, method, include_edge_cases)
-                    tests.extend(method_tests)
+            if method.name.startswith('_') and method.name != '__init__':
+                continue
+            if method.name == '__init__':
+                continue
+
+            # Layer 2: Try evidence-based tests for method FIRST
+            method_evidence = self._generate_method_evidence_tests(cls, method, include_edge_cases)
+
+            if method_evidence:
+                tests.extend(method_evidence)
+            else:
+                # Layer 1: Fallback to smoke test
+                smoke = self._generate_method_smoke_test(cls, method)
+                tests.append(smoke)
 
         return tests
 
     # =========================================================================
-    # Layer 1: Basic Tests
+    # Layer 1: Basic Tests (Smoke Tests)
     # =========================================================================
 
     def _generate_basic_test(self, func: FunctionInfo) -> GeneratedTestCase:
-        """Generate basic smoke test - verifies function runs without error."""
+        """Generate smoke test - ONLY verifies function runs without error."""
         body = []
 
-        # Build function call with default values
         params = self._build_param_assignments(func)
         body.extend(params)
 
-        # Call function
         call = self._build_function_call(func)
         body.append(f"result = {call}")
 
-        # Basic assertion
-        body.append("assert result is not None or result == 0 or result == '' or result == [] or result == {}")
+        # No fake assertion - just verify it runs
+        body.append("# Smoke test: function executes without raising an exception")
 
         return GeneratedTestCase(
-            name=f"test_{func.name}_basic",
-            description=f"Test {func.name} executes without error.",
+            name=f"test_{func.name}_smoke",
+            description=f"Smoke test: {func.name} runs without error.",
             body=body,
-            evidence_source="template"
+            evidence_source="smoke"
         )
 
     def _generate_class_init_test(self, cls: ClassInfo) -> GeneratedTestCase:
         """Generate test for class instantiation."""
-        # Find __init__ to get parameters
-        init_method = None
-        for method in cls.methods:
-            if method.name == '__init__':
-                init_method = method
-                break
-
         body = []
+
+        # Build instance creation with proper params
+        init_method = self._find_init_method(cls)
 
         if init_method:
             params = self._build_param_assignments(init_method, skip_self=True)
             body.extend(params)
 
-            # Get param names for call
-            param_names = [
-                p.name for p in init_method.parameters
-                if p.name not in ('self', 'cls')
-            ]
-            if param_names:
-                body.append(f"instance = {cls.name}({', '.join(param_names)})")
-            else:
-                body.append(f"instance = {cls.name}()")
-        else:
-            body.append(f"instance = {cls.name}()")
-
+        instance_call = self._build_class_instance(cls)
+        body.append(f"instance = {instance_call}")
         body.append("assert instance is not None")
 
         return GeneratedTestCase(
@@ -145,47 +138,195 @@ class TemplateGenerator(TestGeneratorBase):
             evidence_source="template"
         )
 
+    def _generate_method_smoke_test(
+        self,
+        cls: ClassInfo,
+        method: FunctionInfo
+    ) -> GeneratedTestCase:
+        """Generate smoke test for a method (fallback when no evidence)."""
+        body = []
+
+        # Build instance with proper init params
+        init_method = self._find_init_method(cls)
+        if init_method:
+            init_params = self._build_param_assignments(init_method, skip_self=True)
+            body.extend(init_params)
+
+        instance_call = self._build_class_instance(cls)
+        body.append(f"instance = {instance_call}")
+
+        # Build method call
+        method_params = self._build_param_assignments(method, skip_self=True)
+        body.extend(method_params)
+
+        call = self._build_method_call(method)
+        body.append(f"result = instance.{call}")
+
+        # No fake assertion
+        body.append("# Smoke test: method executes without raising an exception")
+
+        return GeneratedTestCase(
+            name=f"test_{cls.name.lower()}_{method.name}_smoke",
+            description=f"Smoke test: {cls.name}.{method.name}() runs without error.",
+            body=body,
+            evidence_source="smoke"
+        )
+
     def _generate_method_tests(
         self,
         cls: ClassInfo,
         method: FunctionInfo,
         include_edge_cases: bool
     ) -> list[GeneratedTestCase]:
-        """Generate tests for a class method."""
-        tests = []
-
-        body = []
-        body.append(f"instance = {cls.name}()")
-
-        # Build method call
-        params = self._build_param_assignments(method, skip_self=True)
-        body.extend(params)
-
-        param_names = [
-            p.name for p in method.parameters
-            if p.name not in ('self', 'cls')
-        ]
-
-        if param_names:
-            call = f"instance.{method.name}({', '.join(param_names)})"
-        else:
-            call = f"instance.{method.name}()"
-
-        body.append(f"result = {call}")
-        body.append("assert result is not None or result == 0 or result == '' or result == []")
-
-        tests.append(GeneratedTestCase(
-            name=f"test_{cls.name.lower()}_{method.name}",
-            description=f"Test {cls.name}.{method.name}() method.",
-            body=body,
-            evidence_source="template"
-        ))
-
-        return tests
+        """Generate tests for a class method (DEPRECATED - use evidence-first approach)."""
+        # Keep for backward compatibility, delegates to smoke test
+        return [self._generate_method_smoke_test(cls, method)]
 
     # =========================================================================
     # Layer 2: Evidence-Based Tests
     # =========================================================================
+
+    def _generate_method_evidence_tests(
+        self,
+        cls: ClassInfo,
+        method: FunctionInfo,
+        include_edge_cases: bool = True
+    ) -> list[GeneratedTestCase]:
+        """Generate evidence-based tests for a method. Returns empty if no evidence."""
+        tests = []
+
+        # From doctests
+        if method.docstring:
+            doctest_cases = self._generate_method_doctests(cls, method)
+            tests.extend(doctest_cases)
+
+        # From type hints
+        if method.return_type:
+            type_test = self._generate_method_type_test(cls, method)
+            if type_test:
+                tests.append(type_test)
+
+        # From naming heuristics
+        heuristic_test = self._generate_method_naming_test(cls, method)
+        if heuristic_test:
+            tests.append(heuristic_test)
+
+        return tests
+
+    def _generate_method_doctests(
+        self,
+        cls: ClassInfo,
+        method: FunctionInfo
+    ) -> list[GeneratedTestCase]:
+        """Generate tests from method docstring examples."""
+        if not method.docstring:
+            return []
+
+        tests = []
+        examples = extract_doctests(method.docstring)
+
+        for i, example in enumerate(examples):
+            assertion = doctest_to_assertion(example, method.name)
+            if assertion:
+                body = []
+
+                # Build instance
+                init_method = self._find_init_method(cls)
+                if init_method:
+                    init_params = self._build_param_assignments(init_method, skip_self=True)
+                    body.extend(init_params)
+
+                instance_call = self._build_class_instance(cls)
+                body.append(f"instance = {instance_call}")
+
+                # Add assertion (may need adjustment for method calls)
+                body.append(assertion)
+
+                test_name = f"test_{cls.name.lower()}_{method.name}_doctest_{i + 1}"
+                tests.append(GeneratedTestCase(
+                    name=test_name,
+                    description=f"Test {cls.name}.{method.name} with documented example.",
+                    body=body,
+                    evidence_source="doctest"
+                ))
+
+        return tests
+
+    def _generate_method_type_test(
+        self,
+        cls: ClassInfo,
+        method: FunctionInfo
+    ) -> GeneratedTestCase | None:
+        """Generate type test for a method."""
+        assertions = generate_type_assertions(method.return_type)
+
+        if not assertions:
+            return None
+
+        body = []
+
+        # Build instance
+        init_method = self._find_init_method(cls)
+        if init_method:
+            init_params = self._build_param_assignments(init_method, skip_self=True)
+            body.extend(init_params)
+
+        instance_call = self._build_class_instance(cls)
+        body.append(f"instance = {instance_call}")
+
+        # Build method call
+        method_params = self._build_param_assignments(method, skip_self=True)
+        body.extend(method_params)
+
+        call = self._build_method_call(method)
+        body.append(f"result = instance.{call}")
+
+        # Add type assertions
+        body.extend(assertions)
+
+        return GeneratedTestCase(
+            name=f"test_{cls.name.lower()}_{method.name}_return_type",
+            description=f"Test {cls.name}.{method.name}() returns correct type.",
+            body=body,
+            evidence_source="type_hint"
+        )
+
+    def _generate_method_naming_test(
+        self,
+        cls: ClassInfo,
+        method: FunctionInfo
+    ) -> GeneratedTestCase | None:
+        """Generate test based on method naming convention."""
+        name = method.name.lower()
+
+        if not (name.startswith('is_') or name.startswith('has_')):
+            return None
+
+        body = []
+
+        # Build instance
+        init_method = self._find_init_method(cls)
+        if init_method:
+            init_params = self._build_param_assignments(init_method, skip_self=True)
+            body.extend(init_params)
+
+        instance_call = self._build_class_instance(cls)
+        body.append(f"instance = {instance_call}")
+
+        # Build method call
+        method_params = self._build_param_assignments(method, skip_self=True)
+        body.extend(method_params)
+
+        call = self._build_method_call(method)
+        body.append(f"result = instance.{call}")
+        body.append("assert isinstance(result, bool), f'Expected bool, got {type(result)}'")
+
+        return GeneratedTestCase(
+            name=f"test_{cls.name.lower()}_{method.name}_returns_boolean",
+            description=f"Test {cls.name}.{method.name}() returns boolean (naming convention).",
+            body=body,
+            evidence_source="naming_heuristic"
+        )
 
     def _generate_from_doctests(self, func: FunctionInfo) -> list[GeneratedTestCase]:
         """Generate tests from docstring examples."""
@@ -244,7 +385,23 @@ class TemplateGenerator(TestGeneratorBase):
 
         for i, exc in enumerate(exceptions):
             # Build param values
-            param_values = self._build_param_values(func)
+            typed_params = []
+            for p in func.parameters:
+                name = self._get_clean_param_name(p.name)
+                if name in ("self", "cls"):
+                    continue
+                typed_params.append((name, p.type_hint))
+
+            overrides = infer_trigger_overrides(getattr(exc, "condition_ast", None), typed_params)
+
+            values = []
+            for name, hint in typed_params:
+                if name in overrides:
+                    values.append(overrides[name])
+                else:
+                    values.append(get_default_value(hint, name))
+
+            param_values = ", ".join(values)
 
             lines = generate_exception_test(
                 func_name=func.name,
@@ -272,7 +429,7 @@ class TemplateGenerator(TestGeneratorBase):
         # Find parameters with type hints
         typed_params = [
             p for p in func.parameters
-            if p.type_hint and p.name not in ('self', 'cls')
+            if p.type_hint and self._get_clean_param_name(p.name) not in ('self', 'cls')
         ]
 
         if not typed_params:
@@ -290,17 +447,24 @@ class TemplateGenerator(TestGeneratorBase):
 
             # Set up parameters
             for p in func.parameters:
-                if p.name in ('self', 'cls'):
+                clean_name = self._get_clean_param_name(p.name)
+                if clean_name in ('self', 'cls'):
                     continue
+
                 if p.name == param.name:
-                    body.append(f"{p.name} = {boundary.value}")
+                    body.append(f"{clean_name} = {boundary.value}")
                 else:
-                    body.append(f"{p.name} = {get_default_value(p.type_hint)}")
+                    body.append(f"{clean_name} = {get_default_value(p.type_hint)}")
 
             call = self._build_function_call(func)
             body.append(f"result = {call}")
             body.append("# Verify function handles boundary value")
-            body.append("assert result is not None or result == 0 or result == '' or result == [] or result is False")
+
+            if func.return_type:
+                assertions = generate_type_assertions(func.return_type)
+                body.extend(assertions)
+            else:
+                body.append("# Boundary test: function handles edge case without error")
 
             test_name = f"test_{func.name}_with_{boundary.description.replace(' ', '_')}"
             tests.append(GeneratedTestCase(
@@ -357,6 +521,46 @@ class TemplateGenerator(TestGeneratorBase):
     # Helper Methods
     # =========================================================================
 
+    def _get_clean_param_name(self, name: str) -> str:
+        """Remove * or ** prefix from parameter name."""
+        if name.startswith('**'):
+            return name[2:]
+        if name.startswith('*'):
+            return name[1:]
+        return name
+
+    def _find_init_method(self, cls: ClassInfo) -> FunctionInfo | None:
+        """Find __init__ method in a class."""
+        for method in cls.methods:
+            if method.name == '__init__':
+                return method
+        return None
+
+    def _build_class_instance(self, cls: ClassInfo) -> str:
+        """Build class instantiation string with proper init params."""
+        init_method = self._find_init_method(cls)
+
+        if not init_method:
+            return f"{cls.name}()"
+
+        param_parts = []
+        for p in init_method.parameters:
+            clean_name = self._get_clean_param_name(p.name)
+            if clean_name in ('self', 'cls'):
+                continue
+
+            # Handle *args and **kwargs in call
+            if p.name.startswith('**'):
+                param_parts.append(f"**{clean_name}")
+            elif p.name.startswith('*'):
+                param_parts.append(f"*{clean_name}")
+            else:
+                param_parts.append(clean_name)
+
+        if param_parts:
+            return f"{cls.name}({', '.join(param_parts)})"
+        return f"{cls.name}()"
+
     def _build_param_assignments(
         self,
         func: FunctionInfo,
@@ -366,36 +570,76 @@ class TemplateGenerator(TestGeneratorBase):
         lines = []
 
         for param in func.parameters:
-            if param.name in ('self', 'cls'):
+            clean_name = self._get_clean_param_name(param.name)
+
+            if skip_self and clean_name in ('self', 'cls'):
                 continue
 
-            if param.has_default and param.default_value:
-                value = param.default_value
+            # Handle *args and **kwargs
+            if param.name.startswith('**'):
+                # **kwargs → kwargs = {}
+                lines.append(f"{clean_name} = {{}}")
+            elif param.name.startswith('*'):
+                # *args → args = []
+                lines.append(f"{clean_name} = []")
+            elif param.has_default and param.default_value:
+                lines.append(f"{clean_name} = {param.default_value}")
             else:
-                value = get_default_value(param.type_hint)
-
-            lines.append(f"{param.name} = {value}")
+                value = get_default_value(param.type_hint, clean_name)
+                lines.append(f"{clean_name} = {value}")
 
         return lines
 
     def _build_function_call(self, func: FunctionInfo) -> str:
         """Build function call string."""
-        param_names = [
-            p.name for p in func.parameters
-            if p.name not in ('self', 'cls')
-        ]
+        parts = []
 
-        if param_names:
-            return f"{func.name}({', '.join(param_names)})"
+        for p in func.parameters:
+            clean_name = self._get_clean_param_name(p.name)
+            if clean_name in ('self', 'cls'):
+                continue
+
+            # Preserve * and ** in the call
+            if p.name.startswith('**'):
+                parts.append(f"**{clean_name}")
+            elif p.name.startswith('*'):
+                parts.append(f"*{clean_name}")
+            else:
+                parts.append(clean_name)
+
+        if parts:
+            return f"{func.name}({', '.join(parts)})"
         return f"{func.name}()"
+
+    def _build_method_call(self, method: FunctionInfo) -> str:
+        """Build method call string (without instance prefix)."""
+        parts = []
+
+        for p in method.parameters:
+            clean_name = self._get_clean_param_name(p.name)
+            if clean_name in ('self', 'cls'):
+                continue
+
+            # Preserve * and ** in the call
+            if p.name.startswith('**'):
+                parts.append(f"**{clean_name}")
+            elif p.name.startswith('*'):
+                parts.append(f"*{clean_name}")
+            else:
+                parts.append(clean_name)
+
+        if parts:
+            return f"{method.name}({', '.join(parts)})"
+        return f"{method.name}()"
 
     def _build_param_values(self, func: FunctionInfo) -> str:
         """Build comma-separated param values for function call."""
         values = []
         for param in func.parameters:
-            if param.name in ('self', 'cls'):
+            clean_name = self._get_clean_param_name(param.name)
+            if clean_name in ('self', 'cls'):
                 continue
-            values.append(get_default_value(param.type_hint))
+            values.append(get_default_value(param.type_hint, clean_name))
         return ", ".join(values)
 
 
@@ -434,6 +678,7 @@ def generate_tests(
         test_cases=test_cases,
         warnings=warnings
     )
+
 
 def generate_tests_with_ai(
     analysis: AnalysisResult,

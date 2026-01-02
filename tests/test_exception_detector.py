@@ -11,6 +11,7 @@ Covers:
 """
 
 import pytest
+import textwrap 
 from pytest_pipeline_mcp.core.generators.extractors.exception_detector import (
     detect_exceptions,
     escape_for_regex,
@@ -259,6 +260,17 @@ class TestGenerateExceptionTest:
                 compile(full_code, "<test>", "exec")
             except SyntaxError as e:
                 pytest.fail(f"Generated invalid code for message '{exc.message}': {e}\nCode: {code}")
+    def test_detect_exceptions_captures_if_condition(self):
+        code = textwrap.dedent("""
+        def divide(a: float, b: float) -> float:
+            if b == 0:
+                raise ValueError("Cannot divide by zero")
+            return a / b
+        """)
+
+        excs = detect_exceptions(code, "divide")
+        assert len(excs) == 1
+        assert excs[0].condition is not None 
 
 
 class TestDetectExceptions:

@@ -2,11 +2,12 @@
 
 import os
 from dataclasses import dataclass
-
-from openai import OpenAI
-
 from .base import GeneratedTestCase
 
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None  # type: ignore
 
 @dataclass
 class EnhancementResult:
@@ -20,14 +21,14 @@ class EnhancementResult:
 class AIEnhancer:
     """Enhance template-generated tests (stronger assertions + extra edge cases)."""
 
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model: str = "gpt-4o"):
         """Initialize enhancer (api_key arg or OPENAI_API_KEY env; model is configurable)."""
 
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.client = None
 
-        if self.api_key:
+        if self.api_key and OpenAI is not None:
             self.client = OpenAI(api_key=self.api_key)
 
     def is_available(self) -> bool:
@@ -61,7 +62,7 @@ class AIEnhancer:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.2,
-                max_tokens=2000
+                max_tokens=10000
             )
 
             # Parse response
@@ -92,7 +93,7 @@ You will receive:
 2. Basic test cases with weak assertions
 
 Your task:
-1. Analyze the source code to understand the logic
+1. Analyze the source code to understand the logic - also by the function and class names, docstrings, and type hints
 2. Replace weak assertions (like "assert result is not None") with real expected values
 3. Fix exception test trigger conditions
 4. ADD 2-3 additional test functions for important edge cases not covered

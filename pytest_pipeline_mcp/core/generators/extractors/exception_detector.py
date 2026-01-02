@@ -12,7 +12,49 @@ class DetectedException:
     condition: str | None   # "if x < 0" (simplified)
     message: str | None     # "x must be positive"
     line_number: int = 0    # Line where exception is raised
+    condition_ast: ast.expr | None = None  
 
+class _RaiseCollector(ast.NodeVisitor):
+    def __init__(self) -> None:
+        self._conds: list[ast.expr] = []
+        self.exceptions: list[DetectedException] = []
+
+    def _current_condition_ast(self) -> ast.expr | None:
+        if not self._conds:
+            return None
+        if len(self._conds) == 1:
+            return self._conds[0]
+        return ast.BoolOp(op=ast.And(), values=list(self._conds))  # combine with AND
+
+    def visit_Raise(self, node: ast.Raise) -> None:
+        exc = _parse_raise(node)
+        if exc:
+            cond_ast = self._current_condition_ast()
+            exc.condition_ast = cond_ast
+            exc.condition = ast.unparse(cond_ast) if cond_ast else None  # readable condition
+            self.exceptions.append(exc)
+
+    def visit_If(self, node: ast.If) -> None:
+        # handle "if <test>: ..."
+        self._conds.append(node.test)
+        for stmt in node.body:
+            self.visit(stmt)
+        self._conds.pop()
+
+        # handle elif/else using NOT(test)
+        not_test = ast.UnaryOp(op=ast.Not(), operand=node.test)
+
+        if len(node.orelse) == 1 and isinstance(node.orelse[0], ast.If):
+            # elif
+            self._conds.append(not_test)
+            self.visit(node.orelse[0])
+            self._conds.pop()
+        elif node.orelse:
+            # else
+            self._conds.append(not_test)
+            for stmt in node.orelse:
+                self.visit(stmt)
+            self._conds.pop()
 
 def detect_exceptions(code: str, function_name: str) -> list[DetectedException]:
     """Detect exceptions raised by the given function in the provided source."""
@@ -35,14 +77,10 @@ def detect_exceptions(code: str, function_name: str) -> list[DetectedException]:
 
 
 def _extract_raises(func_node: ast.FunctionDef) -> list[DetectedException]:
-    """Extract all raises, including from nested functions."""
-    exceptions = []
-    for node in ast.walk(func_node): 
-        if isinstance(node, ast.Raise):
-            exc = _parse_raise(node)
-            if exc:
-                exceptions.append(exc)
-    return exceptions
+    """Extract raises with surrounding if/else conditions."""
+    collector = _RaiseCollector()
+    collector.visit(func_node)
+    return collector.exceptions
 
 
 def _parse_raise(node: ast.Raise) -> DetectedException | None:
@@ -140,13 +178,12 @@ def generate_exception_test(
 
     return [
         raises_line,
-        f"    {func_call}  # TODO: adjust inputs to trigger exception"
+        f"    {func_call}  # triggers the exception condition"
     ]
 
 
 def get_safe_trigger_hint(exception: DetectedException) -> str | None:
     """Heuristic hint for inputs that might trigger the detected exception."""
-    
     if not exception.message:
         return None
 
@@ -167,3 +204,53 @@ def get_safe_trigger_hint(exception: DetectedException) -> str | None:
         return "Try passing value outside the valid range"
 
     return None
+
+def infer_trigger_overrides(
+    condition_ast: ast.expr | None,
+    params: list[tuple[str, str | None]],
+) -> dict[str, str]:
+    """
+    Return overrides that satisfy the condition.
+    """
+    if condition_ast is None:
+        return {}
+
+    type_by = {n: t for n, t in params}
+
+    def neg_value(name: str) -> str | None:
+        t = (type_by.get(name) or "").replace("typing.", "")
+        if "float" in t:
+            return "-1.0"
+        if "int" in t:
+            return "-1"
+        return None
+
+    def zero_value(name: str) -> str:
+        t = (type_by.get(name) or "").replace("typing.", "")
+        return "0.0" if "float" in t else "0"
+
+    # handle simple comparisons like b == 0, x < 0, y is None, not s, len(items) == 0
+    if isinstance(condition_ast, ast.Compare) and len(condition_ast.ops) == 1 and len(condition_ast.comparators) == 1:
+        left = condition_ast.left
+        op = condition_ast.ops[0]
+        right = condition_ast.comparators[0]
+
+        if isinstance(left, ast.Name):
+            name = left.id
+
+            if isinstance(op, ast.Eq) and isinstance(right, ast.Constant) and right.value == 0:
+                return {name: zero_value(name)}
+            if isinstance(op, (ast.Lt, ast.LtE)) and isinstance(right, ast.Constant) and right.value == 0:
+                nv = neg_value(name)
+                return {name: nv} if nv else {}
+            if isinstance(op, ast.Is) and isinstance(right, ast.Constant) and right.value is None:
+                return {name: "None"}
+
+    if isinstance(condition_ast, ast.UnaryOp) and isinstance(condition_ast.op, ast.Not):
+        # not x  -> set x to empty/False-ish
+        if isinstance(condition_ast.operand, ast.Name):
+            name = condition_ast.operand.id
+            return {name: '""'}  # default falsy for strings; you can expand by type
+
+    # if we can't infer safely, return empty dict
+    return {}
