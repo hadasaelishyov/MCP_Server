@@ -54,8 +54,8 @@ class GitHubService:
         """Get or create GitHub client (lazy initialization)."""
         if self._client is None:
             try:
-                from github import Github
-                self._client = Github(self._token) if self._token else Github()
+                from github import Github, Auth
+                self._client = Github(auth=Auth.Token(self._token)) if self._token else Github()
             except ImportError:
                 return None
         return self._client

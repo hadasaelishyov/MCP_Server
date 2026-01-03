@@ -16,7 +16,7 @@ class TestAIEnhancerInit:
         # Temporarily remove env var if set
         original_key = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            enhancer = AIEnhancer(api_key=None)
+            enhancer = AIEnhancer()
             assert enhancer.is_available() is False
         finally:
             # Restore env var if it existed
@@ -25,23 +25,23 @@ class TestAIEnhancerInit:
     
     def test_create_with_api_key(self):
         """Test enhancer creation with API key."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         assert enhancer.is_available() is True
     
     def test_create_enhancer_factory(self):
         """Test factory function."""
-        enhancer = create_enhancer(api_key="test-key")
+        enhancer = create_enhancer()
         assert isinstance(enhancer, AIEnhancer)
         assert enhancer.is_available() is True
     
     def test_default_model(self):
         """Test default model is set."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         assert enhancer.model == "gpt-4o"
     
     def test_custom_model(self):
         """Test custom model can be set."""
-        enhancer = AIEnhancer(api_key="test-key", model="gpt-4o")
+        enhancer = AIEnhancer(model="gpt-4o")
         assert enhancer.model == "gpt-4o"
 
 
@@ -50,7 +50,7 @@ class TestAIEnhancerPrompts:
     
     def test_build_enhancement_prompt(self):
         """Test prompt contains source code and tests."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         source_code = "def add(a, b): return a + b"
         test_cases = [
@@ -70,7 +70,7 @@ class TestAIEnhancerPrompts:
     
     def test_system_prompt_content(self):
         """Test system prompt has key instructions."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         system_prompt = enhancer._get_system_prompt()
         
         assert "Python" in system_prompt
@@ -83,7 +83,7 @@ class TestAIEnhancerParsing:
     
     def test_extract_code_block_python(self):
         """Test extracting Python code block."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         text = '''Here is the enhanced code:
 ````python
@@ -98,7 +98,7 @@ That should work!'''
     
     def test_extract_code_block_generic(self):
         """Test extracting generic code block."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         text = '''```
 def test_something():
@@ -110,7 +110,7 @@ def test_something():
     
     def test_extract_code_block_none(self):
         """Test returns None when no code block."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         text = "No code block here!"
         result = enhancer._extract_code_block(text)
@@ -118,7 +118,7 @@ def test_something():
     
     def test_tests_to_code(self):
         """Test converting test cases to code string."""
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         test_cases = [
             GeneratedTestCase(
@@ -145,7 +145,7 @@ class TestAIEnhancerFallback:
         # Temporarily remove env var if set
         original_key = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            enhancer = AIEnhancer(api_key=None)
+            enhancer = AIEnhancer()
             
             original_tests = [
                 GeneratedTestCase(
@@ -174,7 +174,7 @@ class TestAIEnhancerFallback:
         mock_client.chat.completions.create.side_effect = Exception("API Error")
         mock_openai_class.return_value = mock_client
         
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         original_tests = [
             GeneratedTestCase(
@@ -217,7 +217,7 @@ SUGGESTIONS:
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         original_tests = [
             GeneratedTestCase(
@@ -259,7 +259,7 @@ def test_two():
         mock_client.chat.completions.create.return_value = mock_response
         mock_openai_class.return_value = mock_client
         
-        enhancer = AIEnhancer(api_key="test-key")
+        enhancer = AIEnhancer()
         
         original_tests = [
             GeneratedTestCase(

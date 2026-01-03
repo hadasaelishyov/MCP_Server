@@ -21,10 +21,10 @@ class EnhancementResult:
 class AIEnhancer:
     """Enhance template-generated tests (stronger assertions + extra edge cases)."""
 
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o"):
-        """Initialize enhancer (api_key arg or OPENAI_API_KEY env; model is configurable)."""
+    def __init__(self, model: str = "gpt-4o"):
+        """Initialize enhancer ( model is configurable)."""
 
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("OPENAI_API_KEY")
         self.model = model
         self.client = None
 
@@ -253,6 +253,6 @@ Please enhance these tests:
         return enhanced_tests if enhanced_tests else original_tests
 
 
-def create_enhancer(api_key: str | None = None) -> AIEnhancer:
+def create_enhancer() -> AIEnhancer:
     """Factory function to create an AI enhancer."""
-    return AIEnhancer(api_key=api_key)
+    return AIEnhancer()

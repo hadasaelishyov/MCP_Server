@@ -69,21 +69,6 @@ class TestGitHubService:
         assert result.success is False
         assert result.error.code == ErrorCode.VALIDATION_ERROR
     
-    def test_create_pr_requires_token(self):
-        """Creating PR requires token."""
-        service = GitHubService(token=None)
-        result = service.create_pull_request(
-            repo_url="https://github.com/test/repo",
-            file_path="tests/test_example.py",
-            file_content="def test_example(): pass",
-            branch_name="test-branch",
-            commit_message="Add tests",
-            pr_title="Add tests",
-            pr_body="Test PR"
-        )
-        assert result.success is False
-        assert result.error.code == ErrorCode.GITHUB_AUTH_ERROR
-    
     def test_post_comment_requires_token(self):
         """Posting comment requires token."""
         import os

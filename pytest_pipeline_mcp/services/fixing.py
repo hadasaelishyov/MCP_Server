@@ -20,7 +20,6 @@ class FixingService:
         test_code: str,
         test_output: str | None = None,
         verify: bool = True,
-        api_key: str | None = None
     ) -> ServiceResult[FixResult]:
         """Attempt to fix `source_code` using `test_code` (+ optional test output / verification)."""
 
@@ -36,7 +35,6 @@ class FixingService:
                 test_code=test_code,
                 test_output=test_output,
                 verify=verify,
-                api_key=api_key
             )
         except Exception as e:
             return ServiceResult.fail(
@@ -58,7 +56,6 @@ class FixingService:
         test_code: str,
         test_output: str | None = None,
         verify: bool = True,
-        api_key: str | None = None
     ) -> ServiceResult[str]:
         """Fix code and return only the fixed code string (fails if fix unsuccessful)."""
 
@@ -66,8 +63,7 @@ class FixingService:
             source_code=source_code,
             test_code=test_code,
             test_output=test_output,
-            verify=verify,
-            api_key=api_key
+            verify=verify
         )
 
         if not result.success:

@@ -41,10 +41,6 @@ TOOL_DEFINITION = Tool(
             "use_ai": {
                 "type": "boolean",
                 "description": "Whether to use AI to enhance tests (default: false)"
-            },
-            "api_key": {
-                "type": "string",
-                "description": "OpenAI API key (optional, uses env var if not provided)"
             }
         }
     }
@@ -64,8 +60,7 @@ async def handle(arguments: dict) -> list[TextContent]:
         file_path=arguments.get("file_path"),
         output_path=arguments.get("output_path"),
         include_edge_cases=arguments.get("include_edge_cases", True),
-        use_ai=arguments.get("use_ai", False),
-        api_key=arguments.get("api_key")
+        use_ai=arguments.get("use_ai", False)
     )
 
     if not result.success:

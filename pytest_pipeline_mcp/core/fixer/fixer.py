@@ -20,10 +20,10 @@ from .models import (
 class CodeFixer:
     """Generate minimal code fixes from failing tests (AI-assisted, optional verification)."""
 
-    def __init__(self, api_key: str | None = None, model: str = "gpt-4o"):
-        """Configure the fixer (API key from arg or OPENAI_API_KEY; model selectable)."""
+    def __init__(self, model: str = "gpt-4o"):
+        """Configure the fixer (model selectable)."""
 
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv("OPENAI_API_KEY")
         self.model = model
         self.client = None
 
@@ -474,14 +474,13 @@ def fix_code(
     test_code: str,
     test_output: str | None = None,
     verify: bool = True,
-    api_key: str | None = None
 ) -> FixResult:
     """Create a CodeFixer instance."""
     
-    fixer = CodeFixer(api_key=api_key)
+    fixer = CodeFixer()
     return fixer.fix(source_code, test_code, test_output, verify)
 
 
-def create_fixer(api_key: str | None = None) -> CodeFixer:
+def create_fixer() -> CodeFixer:
     """Factory function to create a CodeFixer instance."""
-    return CodeFixer(api_key=api_key)
+    return CodeFixer()

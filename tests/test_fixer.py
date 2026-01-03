@@ -169,19 +169,18 @@ class TestCodeFixerInit:
     
     def test_create_with_api_key(self):
         """Test creation with API key."""
-        fixer = CodeFixer(api_key="test-key")
+        fixer = CodeFixer()
         # Note: is_available() depends on openai package being installed
-        assert fixer.api_key == "test-key"
         assert fixer.model == "gpt-4o"
     
     def test_custom_model(self):
         """Test custom model setting."""
-        fixer = CodeFixer(api_key="test-key", model="gpt-4o")
+        fixer = CodeFixer(model="gpt-4o")
         assert fixer.model == "gpt-4o"
     
     def test_create_fixer_factory(self):
         """Test factory function."""
-        fixer = create_fixer(api_key="test-key")
+        fixer = create_fixer()
         assert isinstance(fixer, CodeFixer)
 
 
@@ -489,7 +488,7 @@ CONFIDENCE: high
         mock_client.chat.completions.create.return_value = mock_response
         
         # Create fixer with mocked client
-        fixer = CodeFixer(api_key="test-key")
+        fixer = CodeFixer()
         fixer.client = mock_client  # Inject mock
         
         result = fixer.fix(
@@ -511,7 +510,7 @@ CONFIDENCE: high
         mock_client = Mock()
         mock_client.chat.completions.create.side_effect = Exception("API Error")
         
-        fixer = CodeFixer(api_key="test-key")
+        fixer = CodeFixer()
         fixer.client = mock_client  # Inject mock
         
         result = fixer.fix(

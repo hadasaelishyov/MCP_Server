@@ -35,10 +35,6 @@ TOOL_DEFINITION = Tool(
             "verify": {
                 "type": "boolean",
                 "description": "Whether to verify the fix by re-running tests (default: true)"
-            },
-            "api_key": {
-                "type": "string",
-                "description": "OpenAI API key (optional, uses env var if not provided)"
             }
         },
         "required": ["source_code", "test_code"]
@@ -59,8 +55,7 @@ async def handle(arguments: dict) -> list[TextContent]:
         source_code=arguments.get("source_code", ""),
         test_code=arguments.get("test_code", ""),
         test_output=arguments.get("test_output"),
-        verify=arguments.get("verify", True),
-        api_key=arguments.get("api_key")
+        verify=arguments.get("verify", True)
     )
 
     if not result.success:

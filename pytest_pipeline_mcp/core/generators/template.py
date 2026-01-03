@@ -119,25 +119,45 @@ class TemplateGenerator(TestGeneratorBase):
     def _generate_class_init_test(self, cls: ClassInfo) -> GeneratedTestCase:
         """Generate test for class instantiation."""
         body = []
-
-        # Build instance creation with proper params
+        
         init_method = self._find_init_method(cls)
-
+        
+        # Check if __init__ has required parameters
+        has_required_params = False
         if init_method:
+            has_required_params = any(
+                not p.has_default and self._get_clean_param_name(p.name) not in ('self', 'cls')
+                for p in init_method.parameters
+            )
+        
+        if init_method and has_required_params:
+            # Generate parameters with proper defaults
             params = self._build_param_assignments(init_method, skip_self=True)
             body.extend(params)
-
-        instance_call = self._build_class_instance(cls)
-        body.append(f"instance = {instance_call}")
+            instance_call = self._build_class_instance(cls)
+            body.append(f"instance = {instance_call}")
+        else:
+            # No required params - simple instantiation
+            body.append(f"instance = {cls.name}()")
+        
         body.append("assert instance is not None")
-
+        body.append(f"assert isinstance(instance, {cls.name})")
+        
+        if init_method:
+            for param in init_method.parameters:
+                clean_name = self._get_clean_param_name(param.name)
+                if clean_name not in ('self', 'cls', 'args', 'kwargs'):
+                    # Check if attribute was likely set
+                    body.append(f"# Verify instance was initialized properly")
+                    break
+        
         return GeneratedTestCase(
             name=f"test_{cls.name.lower()}_creation",
-            description=f"Test {cls.name} can be instantiated.",
+            description=f"Test {cls.name} can be instantiated and is of correct type.",
             body=body,
             evidence_source="template"
         )
-
+        
     def _generate_method_smoke_test(
         self,
         cls: ClassInfo,
@@ -684,9 +704,8 @@ def generate_tests_with_ai(
     analysis: AnalysisResult,
     source_code: str,
     module_name: str = "module",
-    include_edge_cases: bool = True,
-    api_key: str | None = None
-) -> GeneratedTest:
+    include_edge_cases: bool = True
+    ) -> GeneratedTest:
     """Generate tests and optionally enhance them with AI (falls back to template on failure)."""
 
     from .ai import create_enhancer
@@ -700,7 +719,7 @@ def generate_tests_with_ai(
     )
 
     # Step 2: Try AI enhancement
-    enhancer = create_enhancer(api_key=api_key)
+    enhancer = create_enhancer()
 
     if not enhancer.is_available():
         result.warnings.append("AI enhancement skipped: No API key configured")

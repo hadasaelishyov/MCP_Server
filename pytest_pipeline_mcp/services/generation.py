@@ -52,7 +52,6 @@ class GenerationService:
         file_path: str | None = None,
         include_edge_cases: bool = True,
         use_ai: bool = False,
-        api_key: str | None = None,
         output_path: str | None = None
     ) -> ServiceResult[GenerationResult]:
         """Generate tests for `code` or `file_path` (optionally AI-enhanced / saved to file)."""
@@ -78,8 +77,7 @@ class GenerationService:
                 analysis=analysis,
                 source_code=loaded.content,
                 module_name=loaded.module_name,
-                include_edge_cases=include_edge_cases,
-                api_key=api_key
+                include_edge_cases=include_edge_cases
             )
             mode = "AI-enhanced"
         else:
@@ -121,8 +119,7 @@ class GenerationService:
         code: str | None = None,
         file_path: str | None = None,
         include_edge_cases: bool = True,
-        use_ai: bool = False,
-        api_key: str | None = None
+        use_ai: bool = False
     ) -> ServiceResult[str]:
         """Generate tests and return just the code string."""
         
@@ -131,7 +128,6 @@ class GenerationService:
             file_path=file_path,
             include_edge_cases=include_edge_cases,
             use_ai=use_ai,
-            api_key=api_key,
             output_path=None
         )
 
