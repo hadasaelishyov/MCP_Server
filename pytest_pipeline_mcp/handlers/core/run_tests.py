@@ -42,7 +42,7 @@ async def handle(arguments: dict) -> list[TextContent]:
     """Run pytest for given source + test code and return a formatted result."""
     service = ExecutionService()
 
-    result = service.run(
+    result = await service.run(
         source_code=arguments.get("source_code", ""),
         test_code=arguments.get("test_code", "")
     )

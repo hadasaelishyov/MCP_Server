@@ -38,7 +38,7 @@ class CodeFixer:
         """Check if AI fixing is available."""
         return self.client is not None
 
-    def fix(
+    async def fix(
         self,
         source_code: str,
         test_code: str,
@@ -59,7 +59,7 @@ class CodeFixer:
             # Step 1: Run tests if no output provided
             if test_output is None:
                 from ..runner import run_tests
-                run_result = run_tests(source_code, test_code)
+                run_result = await run_tests(source_code, test_code)
 
                 # If all tests pass, nothing to fix!
                 if run_result.success:
@@ -124,7 +124,7 @@ class CodeFixer:
             # Step 5: Verify fix if requested
             verification = None
             if verify:
-                verification = self._verify_fix(fixed_code, test_code)
+                verification = await self._verify_fix(fixed_code, test_code)
 
             return FixResult(
                 success=True,
@@ -444,13 +444,13 @@ Please analyze the failures and fix the source code. Remember:
 
         return fixed_code, bugs_found, fixes_applied, confidence
 
-    def _verify_fix(self, fixed_code: str, test_code: str) -> VerificationResult:
+    async def _verify_fix(self, fixed_code: str, test_code: str) -> VerificationResult:
         """Verify the fix by re-running tests."""
         
         try:
             from ..runner import run_tests
 
-            result = run_tests(fixed_code, test_code)
+            result = await run_tests(fixed_code, test_code)
 
             return VerificationResult(
                 ran=True,
@@ -469,16 +469,15 @@ Please analyze the failures and fix the source code. Remember:
             )
 
 
-def fix_code(
+async def fix_code(
     source_code: str,
     test_code: str,
     test_output: str | None = None,
     verify: bool = True,
 ) -> FixResult:
     """Create a CodeFixer instance."""
-    
     fixer = CodeFixer()
-    return fixer.fix(source_code, test_code, test_output, verify)
+    return await fixer.fix(source_code, test_code, test_output, verify)
 
 
 def create_fixer() -> CodeFixer:

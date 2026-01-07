@@ -13,7 +13,8 @@ from pytest_pipeline_mcp.core.runner import run_tests
 class TestFullPipeline:
     """Test the complete analyze → generate → run pipeline."""
 
-    def test_simple_function_pipeline(self):
+    @pytest.mark.asyncio
+    async def test_simple_function_pipeline(self):
         """Test pipeline with a simple correct function."""
         source = '''
 def add(a: int, b: int) -> int:
@@ -40,13 +41,14 @@ def add(a: int, b: int) -> int:
 
         # Step 3: Run tests
         test_code = result.to_code()
-        run_result = run_tests(source, test_code)
+        run_result = await run_tests(source, test_code)
         
         assert run_result.success is True
         assert run_result.passed > 0
         assert run_result.failed == 0
-
-    def test_buggy_code_pipeline(self):
+        
+    @pytest.mark.asyncio
+    async def test_buggy_code_pipeline(self):
         """Test pipeline with buggy code (tests should fail)."""
         source = '''
 def add(a: int, b: int) -> int:
@@ -67,7 +69,7 @@ def add(a: int, b: int) -> int:
 
         # Step 3: Run tests (should fail due to bug)
         test_code = result.to_code()
-        run_result = run_tests(source, test_code)
+        run_result = await run_tests(source, test_code)
         
         # The doctest test should fail because add(1,2) returns -1, not 3
         assert run_result.failed > 0 or run_result.success is False
@@ -100,7 +102,8 @@ def divide(a: float, b: float) -> float:
         test_code = result.to_code()
         assert "pytest.raises(ValueError" in test_code
 
-    def test_class_pipeline(self):
+    @pytest.mark.asyncio
+    async def test_class_pipeline(self):
         """Test pipeline with a class."""
         source = '''
 class Calculator:
@@ -129,7 +132,7 @@ class Calculator:
 
         # Run tests
         test_code = result.to_code()
-        run_result = run_tests(source, test_code)
+        run_result = await run_tests(source, test_code)
         
         assert run_result.success is True
 

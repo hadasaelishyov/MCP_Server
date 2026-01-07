@@ -14,7 +14,7 @@ from .base import ErrorCode, ServiceResult
 class ExecutionService:
     """Execute pytest tests for given source + tests and return a RunResult."""
     
-    def run(
+    async def run(
         self,
         source_code: str,
         test_code: str
@@ -28,7 +28,7 @@ class ExecutionService:
 
         # Step 2: Run tests
         try:
-            run_result = run_tests(source_code, test_code)
+            run_result = await run_tests(source_code, test_code)
         except Exception as e:
             return ServiceResult.fail(
                 ErrorCode.EXECUTION_ERROR,
@@ -44,14 +44,14 @@ class ExecutionService:
 
         return ServiceResult.ok(run_result)
 
-    def run_and_summarize(
+    async def run_and_summarize(
         self,
         source_code: str,
         test_code: str
     ) -> ServiceResult[dict]:
         """Run tests and return a JSON-serializable summary."""
 
-        result = self.run(source_code, test_code)
+        result = await self.run(source_code, test_code)
 
         if not result.success:
             return ServiceResult.fail(

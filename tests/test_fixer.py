@@ -429,13 +429,13 @@ class TestSystemPrompt:
 
 class TestFixCodeFunction:
     """Test the main fix_code function."""
-    
-    def test_fix_code_no_api_key(self):
+    @pytest.mark.asyncio
+    async def test_fix_code_no_api_key(self):
         """Test fix_code returns error without API key."""
         import os
         original = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            result = fix_code(
+            result = await fix_code(
                 source_code="def add(a, b): return a - b",
                 test_code="def test_add(): assert add(1, 2) == 3"
             )
@@ -446,14 +446,15 @@ class TestFixCodeFunction:
         finally:
             if original:
                 os.environ["OPENAI_API_KEY"] = original
-    
-    def test_fix_code_preserves_original(self):
+                
+    @pytest.mark.asyncio
+    async def test_fix_code_preserves_original(self):
         """Test that original code is preserved in result."""
         import os
         original_key = os.environ.pop("OPENAI_API_KEY", None)
         try:
             source = "def broken(): return x"
-            result = fix_code(source, "def test(): pass")
+            result = await fix_code(source, "def test(): pass")
             
             assert result.original_code == source
         finally:
@@ -464,7 +465,8 @@ class TestFixCodeFunction:
 class TestIntegrationWithMockedAI:
     """Integration tests with mocked OpenAI."""
     
-    def test_full_pipeline_success(self):
+    @pytest.mark.asyncio
+    async def test_full_pipeline_success(self):
         """Test full pipeline with mocked AI."""
         # Setup mock
         mock_response = Mock()
@@ -491,7 +493,7 @@ CONFIDENCE: high
         fixer = CodeFixer()
         fixer.client = mock_client  # Inject mock
         
-        result = fixer.fix(
+        result = await fixer.fix(
             source_code="def add(a, b): return a - b",
             test_code="def test_add(): assert add(2, 3) == 5",
             test_output="test_add FAILED\n  Error: AssertionError: assert -1 == 5",
@@ -505,7 +507,8 @@ CONFIDENCE: high
         assert len(result.fixes_applied) == 1
         assert result.confidence == "high"
     
-    def test_pipeline_with_api_error(self):
+    @pytest.mark.asyncio
+    async def test_pipeline_with_api_error(self):
         """Test pipeline handles API errors gracefully."""
         mock_client = Mock()
         mock_client.chat.completions.create.side_effect = Exception("API Error")
@@ -513,7 +516,7 @@ CONFIDENCE: high
         fixer = CodeFixer()
         fixer.client = mock_client  # Inject mock
         
-        result = fixer.fix(
+        result = await fixer.fix(
             source_code="def add(a, b): return a - b",
             test_code="def test_add(): assert add(2, 3) == 5",
             test_output="test_add FAILED",
@@ -527,24 +530,26 @@ CONFIDENCE: high
 class TestEdgeCases:
     """Test edge cases and error handling."""
     
-    def test_empty_source_code(self):
+    @pytest.mark.asyncio
+    async def test_empty_source_code(self):
         """Test with empty source code."""
         import os
         original = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            result = fix_code("", "def test(): pass")
+            result = await fix_code("", "def test(): pass")
             # Should fail due to no API key, but shouldn't crash
             assert result.success is False
         finally:
             if original:
                 os.environ["OPENAI_API_KEY"] = original
-    
-    def test_empty_test_code(self):
+                
+    @pytest.mark.asyncio
+    async def test_empty_test_code(self):
         """Test with empty test code."""
         import os
         original = os.environ.pop("OPENAI_API_KEY", None)
         try:
-            result = fix_code("def add(a, b): return a + b", "")
+            result = await fix_code("def add(a, b): return a + b", "")
             assert result.success is False
         finally:
             if original:

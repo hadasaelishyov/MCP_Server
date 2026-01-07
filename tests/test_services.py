@@ -365,60 +365,65 @@ def add(a, b):
 class TestExecutionService:
     """Tests for ExecutionService."""
     
-    def test_run_validates_source_code(self):
+    @pytest.mark.asyncio
+    async def test_run_validates_source_code(self):
         """Test that source_code is required."""
         service = ExecutionService()
         
-        result = service.run(source_code="", test_code="def test(): pass")
+        result = await service.run(source_code="", test_code="def test(): pass")
         
         assert result.success is False
         assert result.error.code == ErrorCode.MISSING_INPUT
         assert "source_code" in result.error.message
     
-    def test_run_validates_test_code(self):
+    @pytest.mark.asyncio
+    async def test_run_validates_test_code(self):
         """Test that test_code is required."""
         service = ExecutionService()
         
-        result = service.run(source_code="def add(): pass", test_code="")
+        result = await service.run(source_code="def add(): pass", test_code="")
         
         assert result.success is False
         assert result.error.code == ErrorCode.MISSING_INPUT
         assert "test_code" in result.error.message
     
-    def test_run_passing_tests(self):
+    @pytest.mark.asyncio
+    async def test_run_passing_tests(self):
         """Test running passing tests."""
         service = ExecutionService()
         
         source = "def add(a, b): return a + b"
         test = "from module import add\ndef test_add(): assert add(1, 2) == 3"
         
-        result = service.run(source_code=source, test_code=test)
+        result = await service.run(source_code=source, test_code=test)
         
         assert result.success is True
         assert result.data.success is True
         assert result.data.passed >= 1
-    
-    def test_run_failing_tests(self):
+        
+    @pytest.mark.asyncio
+    async def test_run_failing_tests(self):
         """Test running failing tests."""
         service = ExecutionService()
         
         source = "def add(a, b): return a - b"  # Bug!
         test = "from module import add\ndef test_add(): assert add(1, 2) == 3"
         
-        result = service.run(source_code=source, test_code=test)
+        result = await service.run(source_code=source, test_code=test)
         
         assert result.success is True  # Service succeeded
         assert result.data.success is False  # But tests failed
         assert result.data.failed >= 1
-    
-    def test_run_and_summarize(self):
+        
+    @pytest.mark.asyncio
+    async def test_run_and_summarize(self):
         """Test run_and_summarize returns dict."""
         service = ExecutionService()
         
         source = "def add(a, b): return a + b"
         test = "from module import add\ndef test_add(): assert add(1, 2) == 3"
         
-        result = service.run_and_summarize(source_code=source, test_code=test)
+        result = await service.run_and_summarize(source_code=source, test_code=test)
         
         assert result.success is True
         assert isinstance(result.data, dict)
@@ -432,32 +437,35 @@ class TestExecutionService:
 class TestFixingService:
     """Tests for FixingService."""
     
-    def test_fix_validates_source_code(self):
+    @pytest.mark.asyncio
+    async def test_fix_validates_source_code(self):
         """Test that source_code is required."""
         service = FixingService()
         
-        result = service.fix(source_code="", test_code="def test(): pass")
+        result = await service.fix(source_code="", test_code="def test(): pass")
         
         assert result.success is False
         assert result.error.code == ErrorCode.MISSING_INPUT
     
-    def test_fix_validates_test_code(self):
+    @pytest.mark.asyncio
+    async def test_fix_validates_test_code(self):
         """Test that test_code is required."""
         service = FixingService()
         
-        result = service.fix(source_code="def add(): pass", test_code="")
+        result = await service.fix(source_code="def add(): pass", test_code="")
         
         assert result.success is False
         assert result.error.code == ErrorCode.MISSING_INPUT
     
-    def test_fix_already_passing(self):
+    @pytest.mark.asyncio
+    async def test_fix_already_passing(self):
         """Test fix when tests already pass."""
         service = FixingService()
         
         source = "def add(a, b): return a + b"
         test = "from module import add\ndef test_add(): assert add(1, 2) == 3"
         
-        result = service.fix(source_code=source, test_code=test)
+        result = await service.fix(source_code=source, test_code=test)
         
         assert result.success is True
         assert result.data.success is True
@@ -498,7 +506,8 @@ def calculate_area(length: float, width: float) -> float:
         assert "test_calculate_area" in generate_result.data.tests.to_code()
         assert "15.0" in generate_result.data.tests.to_code()
     
-    def test_generate_then_run_pipeline(self):
+    @pytest.mark.asyncio
+    async def test_generate_then_run_pipeline(self):
         """Test the generate → run pipeline."""
         source = '''
 def greet(name: str) -> str:
@@ -518,7 +527,7 @@ def greet(name: str) -> str:
         
         # Run tests
         exec_service = ExecutionService()
-        run_result = exec_service.run(
+        run_result = await exec_service.run(
             source_code=source,
             test_code=gen_result.data.tests.to_code()
         )

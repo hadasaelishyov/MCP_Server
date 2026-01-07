@@ -51,7 +51,7 @@ async def handle(arguments: dict) -> list[TextContent]:
     
     service = FixingService()
 
-    result = service.fix(
+    result =await service.fix(
         source_code=arguments.get("source_code", ""),
         test_code=arguments.get("test_code", ""),
         test_output=arguments.get("test_output"),

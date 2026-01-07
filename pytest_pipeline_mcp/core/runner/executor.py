@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Final
+import asyncio
 
 from .models import CoverageResult, RunResult, TestResult
 
@@ -45,7 +46,7 @@ class PytestRunner:
 
         return "module"  # default fallback
 
-    def run(self) -> RunResult:
+    async def run(self) -> RunResult:
         """Write files to a temp dir, run pytest+coverage, and return a RunResult."""
         
         try:
@@ -61,7 +62,7 @@ class PytestRunner:
                 test_file.write_text(self.test_code, encoding='utf-8')
 
                 # Run pytest with coverage
-                result = self._run_pytest(temp_path, source_file, test_file)
+                result = await self._run_pytest(temp_path, source_file, test_file)
 
                 return result
 
@@ -77,7 +78,7 @@ class PytestRunner:
                 error_message=f"Runner error: {str(e)}"
             )
 
-    def _run_pytest(
+    async def _run_pytest(
         self,
         temp_path: Path,
         source_file: Path,
@@ -99,16 +100,22 @@ class PytestRunner:
         ]
 
         try:
-            process = subprocess.run(
-                cmd,
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
                 cwd=str(temp_path),
-                capture_output=True,
-                text=True,
-                timeout=30,
-                stdin=subprocess.DEVNULL,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                stdin=asyncio.subprocess.DEVNULL,
                 env={**os.environ, "PYTHONPATH": str(temp_path)}
             )
-        except subprocess.TimeoutExpired:
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                process.communicate(),
+                timeout=30
+            )
+            stdout = stdout_bytes.decode('utf-8')
+            stderr = stderr_bytes.decode('utf-8')
+            returncode = process.returncode
+        except asyncio.TimeoutError:
             return RunResult(
                 total=0,
                 passed=0,
@@ -143,7 +150,7 @@ class PytestRunner:
             )
 
         # Parse test results
-        test_results = self._parse_pytest_output(process.stdout, process.stderr)
+        test_results = self._parse_pytest_output(stdout, stderr)
 
         # Parse coverage
         coverage = self._parse_coverage(coverage_json)
@@ -157,9 +164,9 @@ class PytestRunner:
         errors = 0
         error_message = None
 
-        if process.returncode != 0 and total == 0:
+        if returncode != 0 and total == 0:
             errors = 1
-            error_message = self._extract_error(process.stdout, process.stderr)
+            error_message = self._extract_error(stdout, stderr)
 
         return RunResult(
             total=total,
@@ -307,8 +314,7 @@ class PytestRunner:
             return None
 
 
-def run_tests(source_code: str, test_code: str) -> RunResult:
+async def run_tests(source_code: str, test_code: str) -> RunResult:
     """Convenience wrapper that runs tests via PytestRunner."""
-
     runner = PytestRunner(source_code, test_code)
-    return runner.run()
+    return await runner.run()

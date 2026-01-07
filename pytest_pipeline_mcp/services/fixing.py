@@ -14,7 +14,7 @@ from .base import ErrorCode, ServiceResult
 class FixingService:
     """Fix code based on failing tests (optionally verify by re-running)."""
 
-    def fix(
+    async def fix(
         self,
         source_code: str,
         test_code: str,
@@ -30,7 +30,7 @@ class FixingService:
 
         # Step 2: Run fixer
         try:
-            fix_result = fix_code(
+            fix_result = await fix_code(
                 source_code=source_code,
                 test_code=test_code,
                 test_output=test_output,
@@ -50,7 +50,7 @@ class FixingService:
 
         return ServiceResult.ok(fix_result)
 
-    def fix_and_get_code(
+    async def fix_and_get_code(
         self,
         source_code: str,
         test_code: str,
@@ -59,7 +59,7 @@ class FixingService:
     ) -> ServiceResult[str]:
         """Fix code and return only the fixed code string (fails if fix unsuccessful)."""
 
-        result = self.fix(
+        result = await self.fix(
             source_code=source_code,
             test_code=test_code,
             test_output=test_output,
