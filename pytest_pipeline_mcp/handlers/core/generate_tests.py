@@ -98,14 +98,14 @@ def format_generation_result(tests, meta) -> str:
         evidence_counts[source] = evidence_counts.get(source, 0) + 1
 
     for source, count in sorted(evidence_counts.items()):
-        lines.append(f"  • {source}: {count} test(s)")
+        lines.append(f"  - {source}: {count} test(s)")
 
     # Warnings
     if tests.warnings:
         lines.append("")
         lines.append("Warnings/Notes:")
         for warning in tests.warnings:
-            lines.append(f"  • {warning}")
+            lines.append(f"  - {warning}")
 
     # Saved path
     if meta.saved_to:

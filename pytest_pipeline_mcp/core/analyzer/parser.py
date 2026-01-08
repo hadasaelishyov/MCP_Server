@@ -134,8 +134,8 @@ def _parse_parameters(args: ast.arguments) -> list[ParameterInfo]:
     parameters = []
 
     # 1. Positional-only parameters (before /)
-    # posonlyargs has its own defaults: they're at the END of args.defaults
-    # but we need to calculate which defaults belong to posonlyargs vs args
+    # args.defaults applies to the combined positional parameters (posonlyargs + args),
+    # right-aligned to the end of that combined list.
     num_posonlyargs = len(args.posonlyargs)
     num_args = len(args.args)
     num_defaults = len(args.defaults)
@@ -280,6 +280,9 @@ def _get_default_string(node: ast.expr) -> str:
 
 def _calculate_complexity(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
     """Calculate cyclomatic complexity for a function."""
+    
+    # McCabe's cyclomatic complexity: M = 1 + number of decision points
+    # Higher complexity = harder to test/maintain (threshold: 10 is "complex")
     complexity = 1  # Base complexity
 
     for child in ast.walk(node):

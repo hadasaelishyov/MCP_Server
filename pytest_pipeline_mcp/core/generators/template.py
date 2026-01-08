@@ -106,7 +106,6 @@ class TemplateGenerator(TestGeneratorBase):
         call = self._build_function_call(func)
         body.append(f"result = {call}")
 
-        # No fake assertion - just verify it runs
         body.append("# Smoke test: function executes without raising an exception")
 
         return GeneratedTestCase(
@@ -414,6 +413,8 @@ class TemplateGenerator(TestGeneratorBase):
 
             overrides = infer_trigger_overrides(getattr(exc, "condition_ast", None), typed_params)
 
+            # Prefer condition-based overrides when we can infer them (to actually trigger the exception),
+            # otherwise fall back to generic defaults based on type hints.
             values = []
             for name, hint in typed_params:
                 if name in overrides:

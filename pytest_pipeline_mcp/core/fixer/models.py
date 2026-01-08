@@ -161,8 +161,8 @@ class FixResult:
 
         if self.verification:
             if self.verification.passed:
-                lines.append(f"✅ Verified: All {self.verification.tests_passed} tests pass")
+                lines.append(f"Verified: All {self.verification.tests_passed} tests pass")
             else:
-                lines.append(f"⚠️ Verification: {self.verification.tests_passed}/{self.verification.tests_total} tests pass")
+                lines.append(f"Verification: {self.verification.tests_passed}/{self.verification.tests_total} tests pass")
 
         return "\n".join(lines)

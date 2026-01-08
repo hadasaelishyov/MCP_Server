@@ -81,51 +81,51 @@ async def handle(arguments: dict) -> list[TextContent]:
 def format_analysis(analysis: RepositoryAnalysis) -> str:
     """Format repository analysis as readable text."""
     lines = [
-        "📦 REPOSITORY ANALYSIS",
+        "REPOSITORY ANALYSIS",
         "=" * 50,
         "",
         f"Repository: {analysis.repo_url}",
         f"Branch: {analysis.branch}",
         "",
-        "📊 Summary:",
-        f"  • Total Python files: {analysis.total_files}",
-        f"  • Files needing tests: {analysis.files_needing_tests}",
-        f"  • Total functions: {analysis.total_functions}",
-        f"  • Total classes: {analysis.total_classes}",
+        "Summary:",
+        f"  - Total Python files: {analysis.total_files}",
+        f"  - Files needing tests: {analysis.files_needing_tests}",
+        f"  - Total functions: {analysis.total_functions}",
+        f"  - Total classes: {analysis.total_classes}",
         "",
     ]
 
     # Files needing tests
     files_need_tests = [f for f in analysis.files if f.needs_tests]
     if files_need_tests:
-        lines.append("🔴 Files needing tests:")
+        lines.append("Files needing tests:")
         for f in files_need_tests:
-            lines.append(f"  • {f.relative_path}")
+            lines.append(f"  - {f.relative_path}")
             lines.append(f"    Functions: {f.functions_count}, Classes: {f.classes_count}, Complexity: {f.complexity:.1f}")
         lines.append("")
 
     # Test files found
     test_files = [f for f in analysis.files if f.is_test_file]
     if test_files:
-        lines.append("✅ Test files found:")
+        lines.append("Test files found:")
         for f in test_files:
-            lines.append(f"  • {f.relative_path}")
+            lines.append(f"  - {f.relative_path}")
         lines.append("")
 
     # All files overview
-    lines.append("📋 All Python files:")
+    lines.append("All Python files:")
     for f in analysis.files:
         if f.needs_tests:
-            status = "🔴"  # Needs tests
+            status = "[NEEDS_TESTS]"
         elif f.is_test_file:
-            status = "✅"  # Is a test file
+            status = "[TEST]"
         else:
-            status = "⚪"  # Empty or no testable code
+            status = "[OK]"
 
         lines.append(f"  {status} {f.relative_path}")
 
         # Show warnings if any
         for warning in f.warnings[:2]:
-            lines.append(f"      ⚠️ {warning}")
+            lines.append(f"    - Warning: {warning}")
 
     return "\n".join(lines)

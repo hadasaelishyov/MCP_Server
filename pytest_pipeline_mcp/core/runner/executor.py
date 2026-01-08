@@ -4,7 +4,6 @@
 import json
 import os
 import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -116,6 +115,12 @@ class PytestRunner:
             stderr = stderr_bytes.decode('utf-8')
             returncode = process.returncode
         except asyncio.TimeoutError:
+            # Ensure the child process is not left running in the background.
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            await process.wait()
             return RunResult(
                 total=0,
                 passed=0,
@@ -227,6 +232,9 @@ class PytestRunner:
                 continue
 
             if capturing:
+                
+                # Pytest prints section separators (==== / ____). Once we hit the next section header,
+                # we stop collecting lines for this test to avoid grabbing unrelated noise.
                 if line.strip().startswith('_') or line.strip().startswith('='):
                     if error_lines:
                         break

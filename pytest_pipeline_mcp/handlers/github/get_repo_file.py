@@ -81,7 +81,8 @@ async def handle(arguments: dict) -> list[TextContent]:
         size_bytes = len(code.encode("utf-8"))
     except Exception:
         size_bytes = len(code)
-
+        
+    # Guardrail: avoid returning huge files via MCP (token/latency blowups and client limits).
     if size_bytes > MAX_CODE_SIZE:
         return [TextContent(
             type="text",
@@ -90,7 +91,8 @@ async def handle(arguments: dict) -> list[TextContent]:
                 f"Limit is {MAX_CODE_SIZE} bytes."
             )
         )]
-
+        
+    # Markdown output wraps the file in a code fence to preserve formatting in the client UI.
     if output_format == "markdown":
         text = f"### {file_path} ({branch})\n\n```python\n{code}\n```"
     else:

@@ -69,16 +69,16 @@ def format_test_results(run_result) -> str:
         "TEST EXECUTION RESULTS",
         "=" * 50,
         "",
-        "✅ All tests passed!" if run_result.success else "❌ Some tests failed",
+        "All tests passed" if run_result.success else "Some tests failed",
         "",
         "Summary:",
-        f"  • Total:  {run_result.total}",
-        f"  • Passed: {run_result.passed}",
-        f"  • Failed: {run_result.failed}",
+        f"  - Total:  {run_result.total}",
+        f"  - Passed: {run_result.passed}",
+        f"  - Failed: {run_result.failed}",
     ]
 
     if run_result.errors > 0:
-        lines.append(f"  • Errors: {run_result.errors}")
+        lines.append(f"  - Errors: {run_result.errors}")
 
     # Coverage
     if run_result.coverage:
@@ -86,28 +86,28 @@ def format_test_results(run_result) -> str:
         lines.extend([
             "",
             "Code Coverage:",
-            f"  • Coverage: {cov.percentage:.1f}%",
-            f"  • Lines covered: {cov.covered_lines}/{cov.total_lines}",
+            f"  - Coverage: {cov.percentage:.1f}%",
+            f"  - Lines covered: {cov.covered_lines}/{cov.total_lines}",
         ])
         if cov.missing_lines:
             missing = ", ".join(str(l) for l in cov.missing_lines[:10])
             if len(cov.missing_lines) > 10:
                 missing += f"... (+{len(cov.missing_lines) - 10} more)"
-            lines.append(f"  • Missing lines: {missing}")
+            lines.append(f"  - Missing lines: {missing}")
 
     # Passed tests
     if run_result.passed_tests:
         lines.append("")
         lines.append("Passed tests:")
         for name in run_result.passed_tests:
-            lines.append(f"  ✓ {name}")
+            lines.append(f"{name}")
 
     # Failed tests
     if run_result.failed_tests:
         lines.append("")
         lines.append("Failed tests:")
         for failed in run_result.failed_tests:
-            lines.append(f"  ✗ {failed['name']}")
+            lines.append(f"{failed['name']}")
             if failed.get("error"):
                 lines.append(f"    Error: {failed['error']}")
 

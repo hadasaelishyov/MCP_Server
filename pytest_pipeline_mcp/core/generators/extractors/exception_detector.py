@@ -15,8 +15,29 @@ class DetectedException:
     condition_ast: ast.expr | None = None  
 
 class _RaiseCollector(ast.NodeVisitor):
+    """AST visitor that collects raise statements with their surrounding conditions.
+    
+    Algorithm:
+    ---------
+    Uses a stack-based approach to track nested if/elif/else conditions:
+    
+    1. When entering an `if` block, push its test condition onto the stack
+    2. When entering `elif`, push NOT(previous_test) AND elif_test
+    3. When entering `else`, push NOT(previous_test)
+    4. When exiting any block, pop the condition from the stack
+    5. When a `raise` is found, combine all stacked conditions with AND
+    
+    Example:
+        if x < 0:           # stack: [x < 0]
+            if y == 0:      # stack: [x < 0, y == 0]
+                raise ...   # condition = (x < 0) AND (y == 0)
+    
+    This correctly captures the full condition path leading to each exception.
+    """
     def __init__(self) -> None:
+        # Stack of conditions leading to current position in AST
         self._conds: list[ast.expr] = []
+        # Collected exceptions with their trigger conditions
         self.exceptions: list[DetectedException] = []
 
     def _current_condition_ast(self) -> ast.expr | None:
@@ -188,7 +209,7 @@ def get_safe_trigger_hint(exception: DetectedException) -> str | None:
         return None
 
     msg = exception.message.lower()
-
+    
     # Common patterns
     if "empty" in msg:
         return "Try passing empty string or empty list"
@@ -211,6 +232,9 @@ def infer_trigger_overrides(
 ) -> dict[str, str]:
     """
     Return overrides that satisfy the condition.
+    
+    Heuristic overrides: try to satisfy *simple* raise conditions (e.g., x == 0, x < 0, x is None, not x).
+    We intentionally avoid complex expressions to keep generated tests safe and predictable.
     """
     if condition_ast is None:
         return {}

@@ -63,6 +63,7 @@ def doctest_to_assertion(example: DoctestExample, function_name: str) -> str | N
         return None
 
     func = expr.func
+    # Verify the call targets our function: either direct call func() or method call obj.func()
     ok = (
         isinstance(func, ast.Name) and func.id == function_name
     ) or (

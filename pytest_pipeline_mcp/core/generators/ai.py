@@ -204,6 +204,9 @@ Please enhance these tests:
         original_tests: list[GeneratedTestCase]
     ) -> list[GeneratedTestCase]:
         """Parse enhanced test code back into GeneratedTestCase objects."""
+        
+        # Walk AST to find all test_* functions, extract their body lines via ast.unparse(),
+        # and determine if they're enhanced existing tests or newly generated ones.       
         import ast
 
         enhanced_tests = []

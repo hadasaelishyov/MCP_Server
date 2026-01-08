@@ -139,7 +139,7 @@ class TestModels:
         assert "1 bug(s)" in summary
         assert "1 fix(es)" in summary
         assert "high" in summary
-        assert "✅" in summary
+        assert "Verified:" in summary
     
     def test_fix_result_failed_summary(self):
         """Test FixResult summary for failed fix."""

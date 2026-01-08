@@ -229,7 +229,7 @@ class TestFormatAnalysis:
         )
         output = format_analysis(analysis)
         assert "src/calc.py" in output
-        assert "🔴" in output  # Red indicator for needs tests
+        assert "[NEEDS_TESTS]" in output
 
 
 class TestGeneratePRDescription:
@@ -260,13 +260,13 @@ class TestFormatTestComment:
     def test_passing_tests_show_success(self):
         """Passing tests show success emoji."""
         comment = format_test_comment("5 passed, 0 failed", None)
-        assert "✅" in comment
+        assert "[PASS]" in comment
         assert "passed" in comment.lower()
     
     def test_failing_tests_show_failure(self):
         """Failing tests show failure emoji."""
         comment = format_test_comment("3 passed, 2 failed", None)
-        assert "❌" in comment
+        assert "[FAIL]" in comment
     
     def test_includes_coverage_when_provided(self):
         """Coverage is included when provided."""

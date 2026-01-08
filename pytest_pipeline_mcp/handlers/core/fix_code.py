@@ -77,24 +77,24 @@ async def handle(arguments: dict) -> list[TextContent]:
 def format_fix_result(fix_result) -> str:
     """Format fix result as readable text."""
     lines = [
-        "🔧 CODE FIX RESULTS",
+        "CODE FIX RESULTS",
         "=" * 50,
         "",
     ]
 
     if not fix_result.success:
-        lines.append(f"❌ Fix failed: {fix_result.error}")
+        lines.append(f"Fix failed: {fix_result.error}")
         return "\n".join(lines)
 
     lines.extend([
-        "✅ Fix generated successfully!",
+        "Fix generated successfully.",
         f"Confidence: {fix_result.confidence}",
         ""
     ])
 
     # Bugs found
     if fix_result.bugs_found:
-        lines.append(f"🐛 Bugs Found ({len(fix_result.bugs_found)}):")
+        lines.append(f"Bugs Found ({len(fix_result.bugs_found)}):")
         for i, bug in enumerate(fix_result.bugs_found, 1):
             loc = f"[Line {bug.line_number}] " if bug.line_number else ""
             lines.append(f"  {i}. {loc}{bug.description}")
@@ -102,7 +102,7 @@ def format_fix_result(fix_result) -> str:
 
     # Fixes applied
     if fix_result.fixes_applied:
-        lines.append(f"🔨 Fixes Applied ({len(fix_result.fixes_applied)}):")
+        lines.append(f"Fixes Applied ({len(fix_result.fixes_applied)}):")
         for i, fix in enumerate(fix_result.fixes_applied, 1):
             loc = f"[Line {fix.line_number}] " if fix.line_number else ""
             lines.append(f"  {i}. {loc}{fix.description}")
@@ -112,11 +112,11 @@ def format_fix_result(fix_result) -> str:
     # Verification
     if fix_result.verification:
         v = fix_result.verification
-        lines.append("🧪 Verification:")
+        lines.append(" Verification:")
         if v.passed:
-            lines.append(f"  ✅ All tests pass! ({v.tests_passed}/{v.tests_total})")
+            lines.append(f" All tests pass ({v.tests_passed}/{v.tests_total})")
         else:
-            lines.append(f"  ⚠️ {v.tests_passed}/{v.tests_total} tests pass")
+            lines.append(f" {v.tests_passed}/{v.tests_total} tests pass")
             if v.error_message:
                 lines.append(f"  Error: {v.error_message}")
         lines.append("")

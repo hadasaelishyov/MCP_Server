@@ -130,9 +130,12 @@ class TestRunHandler:
         """Can run passing tests."""
         source = "def add(a, b): return a + b"
         test = """
+from module import add
+
 def test_add():
     assert add(1, 2) == 3
 """
+
         result = await handle_run({
             "source_code": source,
             "test_code": test
@@ -140,16 +143,19 @@ def test_add():
         
         assert len(result) == 1
         text = result[0].text
-        assert "passed" in text.lower() or "✅" in text
+        assert "all tests passed" in text.lower()
     
     @pytest.mark.asyncio
     async def test_run_failing_tests(self):
         """Can detect failing tests."""
         source = "def add(a, b): return a + b"
         test = """
+from module import add
+
 def test_add_wrong():
     assert add(1, 2) == 999  # Wrong!
 """
+
         result = await handle_run({
             "source_code": source,
             "test_code": test
@@ -157,7 +163,7 @@ def test_add_wrong():
         
         assert len(result) == 1
         text = result[0].text
-        assert "failed" in text.lower() or "❌" in text
+        assert "some tests failed" in text.lower() or "failed tests:" in text.lower()
     
     @pytest.mark.asyncio
     async def test_run_missing_source_error(self):

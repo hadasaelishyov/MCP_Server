@@ -202,11 +202,31 @@ CONFIDENCE: high/medium/low
         return "\n".join(lines)
 
     def _analyze_failures(self, test_output: str) -> list[FailureInfo]:
-        """Parse test output to extract failure details."""
+        """Parse pytest output to extract structured failure information.
+        
+        Algorithm:
+        ---------
+        Uses a state-machine approach to parse pytest's verbose output:
+        
+        1. SCAN for lines containing 'FAILED' + 'test_' → marks new failure
+        2. COLLECT error details until next failure or end:
+           - Lines with 'Error:'/'Exception:' → extract error type
+           - Lines starting with 'E ' → pytest assertion details
+           - Lines with 'where' → variable expansion info
+           - Lines with '==' → extract expected/actual values
+        3. EMIT FailureInfo when starting new failure or reaching end
+        
+        Handles two pytest output formats:
+        - Full format: "test_file.py::test_name FAILED"
+        - Simple format: "test_name FAILED"
+        
+        Returns:
+            List of FailureInfo objects, one per failed test
+        """
         
         failures = []
         lines = test_output.split('\n')
-
+        
         current_test = None
         current_error_type = "AssertionError"
         current_error_msg = ""
@@ -336,7 +356,13 @@ Please analyze the failures and fix the source code. Remember:
         ai_output: str,
         original_code: str
     ) -> tuple[str | None, list[BugInfo], list[FixInfo], ConfidenceLevel]:
-        """Parse AI response to extract fixed code and explanations."""
+        """Parse AI response to extract fixed code and explanations.
+        The model output is free-form text with a recommended structure.
+        We parse it defensively:
+        1) extract a code-fence block for FIXED CODE
+        2) extract numbered lists for BUGS FOUND / FIXES APPLIED
+        3) validate the returned code compiles before trusting it
+        """
         
         fixed_code = None
         bugs_found = []
